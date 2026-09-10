@@ -243,6 +243,12 @@
     <button id="btnUsePx" type="button">현재가 → 진입가</button>
     <button id="btnRefresh" type="button">⟳ 새로고침</button>
   </div>
+  <div class="chartbtns">
+    <button id="btnDetail" type="button">📋 이 상품 상세 정보</button>
+  </div>
+  <div class="chartbtns">
+    <a href="https://www.investing.com/economic-calendar" target="_blank" rel="noopener" style="flex:1;text-decoration:none"><button type="button" style="width:100%">📅 경제 캘린더</button></a>
+  </div>
   <details class="adv">
     <summary>시세 안 뜨면 (고급)</summary>
     <label class="lbl">직접 프록시 URL (선택)</label>
@@ -719,6 +725,7 @@ function scheduleRefresh(){
 }
 $("btnRefresh").onclick=()=>loadQuote();
 $("btnUsePx").onclick=()=>{if(isFinite(live.price)){$("entry").value=+live.price.toFixed(6);calc();}};
+$("btnDetail").onclick=()=>{location.href="detail.html?code="+encodeURIComponent(sel.value);};
 let lastScale=null;
 function drawChart(){
   const cv=$("chart");if(!cv)return;

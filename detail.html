@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>선물 상품 상세 정보</title>
+<style>
+  :root{
+    --bg:#eef2ff; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --blue:#2563eb;
+    --red:#dc2626; --green:#16a34a; --amber:#b45309; --amberbg:#fffbeb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#e0e7ff 0%,#f8fafc 320px);color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;padding:22px 14px 60px;min-height:100vh}
+  .wrap{max-width:640px;margin:0 auto}
+  a.back{display:inline-block;font-size:13px;font-weight:800;color:var(--blue);text-decoration:none;margin-bottom:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;
+    box-shadow:0 6px 20px rgba(15,23,42,.06);margin-bottom:12px}
+  h1{margin:0;font-size:24px;letter-spacing:-.5px}
+  .sub{color:var(--muted);font-size:13px;margin:6px 0 0}
+  table.spec{width:100%;font-size:13.5px;border-collapse:collapse;margin-top:14px}
+  table.spec th,table.spec td{border:1px solid var(--line);padding:9px 10px;text-align:left}
+  table.spec th{background:#f8fafc;width:130px;color:var(--muted);font-weight:700}
+  .desc{font-size:14.5px;line-height:1.75;margin:14px 0 0}
+  .hours{margin-top:12px;background:var(--amberbg);border:1px solid #fde68a;color:var(--amber);
+    padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.65}
+  label.lbl{display:block;font-size:12.5px;font-weight:800;margin:0 0 6px;color:var(--muted)}
+  select{width:100%;padding:10px 11px;font-size:14.5px;border:1.5px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);margin-top:6px}
+  .btnrow{display:flex;gap:8px;margin-top:12px}
+  .btnrow a{flex:1;text-decoration:none}
+  .btnrow button{width:100%;padding:13px;font-size:14px;font-weight:800;border-radius:12px;cursor:pointer}
+  .btn-p{background:var(--ink);color:#fff;border:none}
+  .btn-o{background:#fff;color:var(--blue);border:1.5px solid var(--line)}
+  footer{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.7;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 계산기로 돌아가기</a>
+  <div class="card">
+    <h1 id="dTitle">—</h1>
+    <p class="sub" id="dSub"></p>
+    <table class="spec"><tbody id="dSpec"></tbody></table>
+    <p class="desc" id="dDesc"></p>
+    <div class="hours" id="dHours"></div>
+  </div>
+  <div class="card">
+    <label class="lbl">다른 상품 보기</label>
+    <select id="dSel"></select>
+    <div class="btnrow">
+      <a href="index.html"><button class="btn-p" type="button">계산기 열기</button></a>
+      <a href="https://www.investing.com/economic-calendar" target="_blank" rel="noopener"><button class="btn-o" type="button">📅 경제 캘린더</button></a>
+    </div>
+  </div>
+  <footer>거래시간은 대략 기준(서머타임·휴장 변동) — 실주문 전 증권사·거래소 확인.<br>교육용 정보이며 투자 조언이 아닙니다.</footer>
+</div>
+<script>
+/* n=종목명 e=거래소 pv=1pt가치 tick=틱 d=설명 h=거래시간(대략) */
+const INFO={
+ES:{n:"S&P 500 E-mini",e:"CME",pv:50,tick:0.25,d:"미국 S&P500 지수 선물. 세계에서 가장 많이 거래되는 지수 선물로 유동성이 풍부합니다. 현금결제.",h:"일~금 17:00~16:00 CT (할트 15:15~15:30 CT)"},
+MES:{n:"Micro S&P",e:"CME",pv:5,tick:0.25,d:"ES의 1/10 크기. 소액·연습용으로 적합한 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+NQ:{n:"Nasdaq-100 E-mini",e:"CME",pv:20,tick:0.25,d:"나스닥100 지수 선물. 기술주 비중이 높아 ES보다 변동성이 큽니다.",h:"일~금 17:00~16:00 CT (할트 15:15~15:30 CT)"},
+MNQ:{n:"Micro Nasdaq",e:"CME",pv:2,tick:0.25,d:"NQ의 1/10 크기 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+YM:{n:"Dow Jones mini (다우)",e:"CBOT",pv:5,tick:1,d:"다우존스 산업평균(30개 대형주) 미니 선물.",h:"일~금 17:00~16:00 CT"},
+MYM:{n:"Micro 다우",e:"CBOT",pv:0.5,tick:1,d:"다우 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+RTY:{n:"Russell 2000",e:"CME",pv:50,tick:0.1,d:"미국 중소형주 2000개 지수 선물. 금리·경기 민감도가 큽니다.",h:"일~금 17:00~16:00 CT"},
+M2K:{n:"Micro 러셀",e:"CME",pv:5,tick:0.1,d:"러셀2000 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+EMD:{n:"S&P MidCap 400",e:"CME",pv:100,tick:0.1,d:"미국 중형주 400개 지수 선물.",h:"일~금 17:00~16:00 CT"},
+NKD:{n:"Nikkei 225",e:"CME",pv:5,tick:5,d:"일본 닛케이225 선물(CME 상장, 달러결제).",h:"일~금 17:00~16:00 CT"},
+VX:{n:"VIX 변동성지수",e:"CFE",pv:1000,tick:0.05,d:"공포지수로 불리는 변동성 선물. 콘탱고 구조라 장기보유에 불리합니다.",h:"일~금 17:00~15:15 CT"},
+ZB:{n:"30년 국채",e:"CBOT",pv:1000,tick:0.03125,d:"미국 30년 국채 선물. 금리 하락(채권 강세) 시 상승합니다.",h:"일~금 17:00~16:00 CT"},
+UB:{n:"울트라 국채",e:"CBOT",pv:1000,tick:0.03125,d:"초장기 국채 선물. 듀레이션이 길어 ZB보다 변동성이 큽니다.",h:"일~금 17:00~16:00 CT"},
+ZN:{n:"10년 국채",e:"CBOT",pv:1000,tick:0.015625,d:"10년물 국채 선물. 금리 선물 중 유동성이 가장 풍부합니다.",h:"일~금 17:00~16:00 CT"},
+TN:{n:"울트라 10년",e:"CBOT",pv:1000,tick:0.03125,d:"울트라 10년 국채 선물.",h:"일~금 17:00~16:00 CT"},
+ZF:{n:"5년 국채",e:"CBOT",pv:1000,tick:0.0078125,d:"5년물 국채 선물.",h:"일~금 17:00~16:00 CT"},
+ZT:{n:"2년 국채",e:"CBOT",pv:2000,tick:0.00390625,d:"2년물 국채 선물. 단기금리·연준 정책에 민감합니다.",h:"일~금 17:00~16:00 CT"},
+"6E":{n:"유로 FX",e:"CME",pv:125000,tick:0.00005,d:"유로/달러 통화 선물. ECB·연준 이벤트에 반응합니다.",h:"일~금 17:00~16:00 CT"},
+"6J":{n:"엔 FX",e:"CME",pv:12500000,tick:0.0000005,d:"일본 엔/달러 선물. 안전통화 성격이 있습니다.",h:"일~금 17:00~16:00 CT"},
+"6B":{n:"파운드 FX",e:"CME",pv:62500,tick:0.0001,d:"영국 파운드/달러 선물.",h:"일~금 17:00~16:00 CT"},
+"6C":{n:"캐나다달러 FX",e:"CME",pv:100000,tick:0.00005,d:"캐나다달러/달러 선물. 유가와 상관관계가 있습니다.",h:"일~금 17:00~16:00 CT"},
+"6A":{n:"호주달러 FX",e:"CME",pv:100000,tick:0.0001,d:"호주달러/달러 선물. 중국 경기·원자재에 민감합니다.",h:"일~금 17:00~16:00 CT"},
+M6E:{n:"Micro 유로",e:"CME",pv:12500,tick:0.0001,d:"유로 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+CL:{n:"WTI 원유",e:"NYMEX",pv:1000,tick:0.01,d:"서부텍사스산 원유 선물. EIA 재고발표·OPEC에 크게 움직입니다.",h:"일~금 17:00~16:00 CT"},
+MCL:{n:"Micro 원유",e:"NYMEX",pv:100,tick:0.01,d:"원유 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+NG:{n:"천연가스",e:"NYMEX",pv:10000,tick:0.001,d:"천연가스 선물. 계절성·변동성이 극심해 손절 관리가 중요합니다.",h:"일~금 17:00~16:00 CT"},
+QG:{n:"미니 천연가스",e:"NYMEX",pv:2500,tick:0.005,d:"천연가스 E-mini 계약.",h:"일~금 17:00~16:00 CT"},
+HO:{n:"난방유",e:"NYMEX",pv:42000,tick:0.0001,d:"난방유 선물. 원유와 동행하는 경우가 많습니다.",h:"일~금 17:00~16:00 CT"},
+RB:{n:"휘발유 RBOB",e:"NYMEX",pv:42000,tick:0.0001,d:"휘발유(RBOB) 선물. 드라이빙 시즌 수요 주목.",h:"일~금 17:00~16:00 CT"},
+B:{n:"브렌트유",e:"ICE",pv:1000,tick:0.01,d:"북해산 브렌트유 선물(ICE). 글로벌 원유 기준 유종입니다.",h:"월~금 01:00~23:00 런던시간"},
+GC:{n:"금 Gold",e:"COMEX",pv:100,tick:0.1,d:"금 선물. 안전자산 성격, 달러와 대체로 역상관입니다.",h:"일~금 17:00~16:00 CT"},
+MGC:{n:"Micro 금",e:"COMEX",pv:10,tick:0.1,d:"금 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+SI:{n:"은 Silver",e:"COMEX",pv:5000,tick:0.005,d:"은 선물. 금보다 변동성이 크고 산업수요 영향도 받습니다.",h:"일~금 17:00~16:00 CT"},
+SIL:{n:"Micro 은",e:"COMEX",pv:1000,tick:0.01,d:"은 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+HG:{n:"구리",e:"COMEX",pv:25000,tick:0.0005,d:"구리 선물. 경기 선행지표라 '닥터 코퍼'로 불립니다.",h:"일~금 17:00~16:00 CT"},
+MHG:{n:"Micro 구리",e:"COMEX",pv:2500,tick:0.0005,d:"구리 마이크로 계약.",h:"일~금 17:00~16:00 CT"},
+PL:{n:"백금",e:"NYMEX",pv:50,tick:0.1,d:"백금 선물. 자동차 촉매 수요가 가격을 좌우합니다.",h:"일~금 17:00~16:00 CT"},
+PA:{n:"팔라듐",e:"NYMEX",pv:100,tick:0.1,d:"팔라듐 선물. 변동성이 매우 큽니다.",h:"일~금 17:00~16:00 CT"},
+ZC:{n:"옥수수",e:"CBOT",pv:5000,tick:0.0025,d:"옥수수 선물. USDA 수급 보고서 발표일에 주의하세요.",h:"일~금 19:00~07:45·08:30~13:20 CT"},
+ZS:{n:"대두",e:"CBOT",pv:5000,tick:0.0025,d:"대두 선물. 중국 수요·남미 작황이 변수입니다.",h:"일~금 19:00~07:45·08:30~13:20 CT"},
+ZW:{n:"밀",e:"CBOT",pv:5000,tick:0.0025,d:"밀 선물. 흑해 정세·기상에 민감합니다.",h:"일~금 19:00~07:45·08:30~13:20 CT"},
+ZM:{n:"대두박",e:"CBOT",pv:100,tick:0.1,d:"대두박(사료용) 선물.",h:"일~금 19:00~07:45·08:30~13:20 CT"},
+ZL:{n:"대두유",e:"CBOT",pv:60000,tick:0.0001,d:"대두유(식용유·바이오연료) 선물.",h:"일~금 19:00~07:45·08:30~13:20 CT"},
+LE:{n:"생우",e:"CME",pv:40000,tick:0.00025,d:"생우(소) 선물. 육류 수급·사료곡물 가격 연동.",h:"월~금 08:30~13:05 CT"},
+HE:{n:"돈육",e:"CME",pv:40000,tick:0.00025,d:"돈육(돼지) 선물.",h:"월~금 08:30~13:05 CT"},
+GF:{n:"육성우",e:"CME",pv:50000,tick:0.00025,d:"육성우(송아지) 선물.",h:"월~금 08:30~13:05 CT"},
+DX:{n:"달러인덱스",e:"ICE US",pv:1000,tick:0.005,d:"달러인덱스 선물(유로 비중 약 57%). 차트는 현물 참고용으로 표시됩니다.",h:"일~금 20:00~17:00 ET"},
+SB:{n:"설탕",e:"ICE US",pv:112000,tick:0.0001,d:"설탕 #11 선물. 브라질 생산·에탄올 정책 주목.",h:"평일 03:30~13:00 ET"},
+CC:{n:"코코아",e:"ICE US",pv:10,tick:1,d:"코코아 선물. 서아프리카 작황이 변수입니다.",h:"평일 04:45~13:30 ET"},
+KC:{n:"커피",e:"ICE US",pv:37500,tick:0.0005,d:"커피 선물. 브라질 서리 피해 시 급등합니다.",h:"평일 04:15~13:30 ET"},
+CT:{n:"면화",e:"ICE US",pv:50000,tick:0.0001,d:"면화 선물.",h:"일~금 21:00~14:20 ET"},
+OJ:{n:"오렌지주스",e:"ICE US",pv:15000,tick:0.0005,d:"오렌지주스 선물. 플로리다 허리케인에 민감합니다.",h:"평일 08:00~13:00 ET"},
+TF:{n:"러셀 ICE 미니",e:"ICE US",pv:50,tick:0.1,d:"ICE 상장 미니 러셀2000. 차트는 RTY 시세로 표시됩니다.",h:"일~금 20:00~18:00 ET"},
+BTC:{n:"비트코인",e:"CME",pv:5,tick:5,d:"비트코인 선물(5 BTC). 주말 휴장으로 월요일 갭이 생깁니다.",h:"일~금 17:00~16:00 CT (주말 휴장)"},
+MBT:{n:"Micro 비트",e:"CME",pv:0.1,tick:5,d:"비트코인 마이크로(0.1 BTC) 계약.",h:"일~금 17:00~16:00 CT (주말 휴장)"},
+ETH:{n:"이더리움",e:"CME",pv:50,tick:0.5,d:"이더리움 선물(50 ETH).",h:"일~금 17:00~16:00 CT (주말 휴장)"},
+MET:{n:"Micro 이더",e:"CME",pv:0.1,tick:0.5,d:"이더리움 마이크로 계약.",h:"일~금 17:00~16:00 CT (주말 휴장)"}
+};
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d}):"—";
+const code=new URLSearchParams(location.search).get("code");
+const sel=$("dSel");
+Object.keys(INFO).forEach(c=>{
+  const o=document.createElement("option");o.value=c;o.textContent=`${c} (${INFO[c].n})`;sel.appendChild(o);
+});
+function render(c){
+  const s=INFO[c];
+  if(!s){
+    $("dTitle").textContent="상품을 선택하세요";
+    $("dSub").textContent="";$("dSpec").innerHTML="";$("dDesc").textContent="";$("dHours").textContent="";
+    return;
+  }
+  document.title=`${c} 상세 정보 — 선물 계산기`;
+  $("dTitle").textContent=`${c} (${s.n})`;
+  $("dSub").textContent=`${s.e} 상장`;
+  $("dSpec").innerHTML=
+    `<tr><th>거래소</th><td>${s.e}</td></tr>`+
+    `<tr><th>1pt 가치</th><td>$${fmt(s.pv)}</td></tr>`+
+    `<tr><th>틱 크기</th><td>${s.tick}</td></tr>`+
+    `<tr><th>틱 가치</th><td>$${fmt(s.pv*s.tick)}</td></tr>`;
+  $("dDesc").textContent=s.d;
+  $("dHours").innerHTML=`🕒 거래시간(대략): <b>${s.h}</b>`;
+  sel.value=c;
+}
+sel.onchange=()=>{location.href="detail.html?code="+encodeURIComponent(sel.value);};
+render(INFO[code]?code:"ES");
+</script>
+</body>
+</html>
