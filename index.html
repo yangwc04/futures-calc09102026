@@ -247,7 +247,7 @@
     <summary>시세 안 뜨면 (고급)</summary>
     <label class="lbl">직접 프록시 URL (선택)</label>
     <input id="proxyUrl" placeholder="예: https://내워커.workers.dev/?url=">
-    <div class="hint">계속 실패할 때만 사용. 무료 중계 주소를 여기에 넣으면 먼저 시도합니다.</div>
+    <div class="hint">계속 실패하면 Cloudflare 무료 중계를 만들어 여기에 넣으세요. 자가 중계가 생기면 페이지에 고정해드립니다.</div>
   </details>
 </div>
 </div>
@@ -596,11 +596,13 @@ let tf="1D",ext=true;
 try{tf=localStorage.getItem("fut_tf")||"1D";if(!TFS[tf])tf="1D";ext=localStorage.getItem("fut_ext")!=="0";}catch(e){}
 function qkey(code){return "fut_quote_"+code+"_"+tf+"_"+(ext?"e":"r");}
 function yahooURL(sym){const c=TFS[tf];return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(sym)+"?interval="+c.i+"&range="+c.r+(ext?"&includePrePost=true":"");}
+const BUILTIN_PROXY="https://summer-thunder-6db8.yangwc04.workers.dev/?url="; // 자가 중계(Cloudflare Worker) 고정
 function proxyChain(url){
   const enc=encodeURIComponent(url);
-  const chain=[url];
+  const chain=[];
+  if(BUILTIN_PROXY)chain.push(BUILTIN_PROXY+enc);
   try{const custom=($("proxyUrl").value||"").trim();if(custom)chain.push(custom+enc);}catch(e){}
-  chain.push(
+  chain.push(url,
     "https://api.allorigins.win/raw?url="+enc,
     "https://api.codetabs.com/v1/proxy?quest="+enc,
     "https://api.cors.lol/?url="+enc,
@@ -614,7 +616,7 @@ function shortErr(u,e){
   const m=msg.match(/HTTP \d+/)||[msg.slice(0,18)];
   return host+":"+m[0];
 }
-async function fetchJSON(url,ms=8000){
+async function fetchJSON(url,ms=20000){
   const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms);
   try{const r=await fetch(url,{signal:ctl.signal});clearTimeout(t);
     if(!r.ok)throw new Error("HTTP "+r.status);
@@ -656,18 +658,24 @@ async function loadQuote(){
   }
   setLiveState("loading","불러오는 중…");
   const url=yahooURL(s.y);
+  // 전 경로 동시 요청 → 가장 먼저 성공한 결과 사용 (하나씩 기다리면 느림)
+  const attempts=proxyChain(url).map(u=>fetchJSON(u).then(
+    j=>({ok:true,u,j}),
+    e=>({ok:false,u,e})
+  ));
+  const results=await Promise.all(attempts);
+  if(live.sym!==s.code)return; // 이미 다른 종목으로 이동
   const errs=[];
-  for(const u of proxyChain(url)){
+  for(const r of results){
+    if(!r.ok){errs.push(shortErr(r.u,r.e));continue;}
     try{
-      const j=await fetchJSON(u);
-      if(live.sym!==s.code)return;
-      const p=parseBars(j);
+      const p=parseBars(r.j);
       live.price=p.price;live.prev=p.prev;live.bars=p.bars.slice(-600);
       live.time=Date.now();live.state="live";live.symCached=qk;
       view.end=0;view.count=TFS[tf].n;cross.on=false;
       try{localStorage.setItem(qk,JSON.stringify({price:p.price,prev:p.prev,bars:live.bars,time:live.time}));}catch(e){}
       renderLive(s,false);drawChart();scheduleRefresh();return;
-    }catch(e){errs.push(shortErr(u,e));}
+    }catch(e){errs.push(shortErr(r.u,"parse"));/* 다음 후보 */}
   }
   try{
     const c=JSON.parse(localStorage.getItem(qk)||"null");
@@ -676,7 +684,8 @@ async function loadQuote(){
       renderLive(s,true);drawChart();scheduleRefresh();return;}
   }catch(e){}
   live.state="err";
-  setLiveState("err","시세 연결 실패 — 새로고침을 눌러보세요"+(errs.length?" ("+errs.slice(0,3).join(" / ")+")":""));
+  try{console.warn("quote failed:",errs.join(" / "));}catch(e){}
+  setLiveState("err","시세 연결 실패 — 잠시 후 자동 재시도됩니다"+(errs.length?" ("+errs.slice(0,2).join(" / ")+")":""));
   drawChart();scheduleRefresh();
 }
 function setLiveState(st,msg){
