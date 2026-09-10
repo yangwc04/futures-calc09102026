@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미국 선물 트레이딩 계산기 Pro — 손절·포지션·RR 한 번에</title>
+<style>
+  :root{
+    --bg:#eef2ff; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --blue:#2563eb; --violet:#7c3aed;
+    --red:#dc2626; --redbg:#fef2f2; --green:#16a34a; --greenbg:#f0fdf4;
+    --amber:#b45309; --amberbg:#fffbeb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#e0e7ff 0%,#f8fafc 320px);color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;padding:22px 14px 60px}
+  .wrap{max-width:1060px;margin:0 auto}
+  header.hero{background:linear-gradient(135deg,#1e1b4b,#4c1d95 55%,#2563eb);
+    color:#fff;border-radius:20px;padding:26px 26px 22px;box-shadow:0 12px 32px rgba(76,29,149,.28)}
+  header.hero h1{margin:0;font-size:22px;letter-spacing:-.3px}
+  header.hero p{margin:8px 0 0;font-size:13px;color:#ddd6fe;line-height:1.6}
+  header.hero .badges{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  header.hero .badges span{font-size:12px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);
+    padding:4px 10px;border-radius:999px}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;margin-top:16px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
+    box-shadow:0 6px 20px rgba(15,23,42,.06)}
+  .card h2{margin:0 0 4px;font-size:15px}
+  .card .desc{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6}
+  label.lbl{display:block;font-size:12.5px;font-weight:800;margin:14px 0 6px}
+  select,input{width:100%;padding:10px 11px;font-size:14.5px;border:1.5px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink)}
+  select:focus,input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  .row{display:flex;gap:10px}.row>div{flex:1;min-width:0}
+  .hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.55}
+  .specpill{margin-top:8px;font-size:12.5px;background:#f1f5f9;border:1px dashed #cbd5e1;
+    border-radius:10px;padding:8px 10px;line-height:1.6}
+  .dir{display:flex;gap:10px;margin-top:6px}
+  .dir button{flex:1;padding:11px;font-size:15px;font-weight:800;border-radius:12px;cursor:pointer;
+    border:2px solid var(--line);background:#f8fafc;transition:.15s}
+  .dir button small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
+  #btnLong.on{background:var(--greenbg);border-color:var(--green);color:var(--green)}
+  #btnShort.on{background:var(--redbg);border-color:var(--red);color:var(--red)}
+  .seg{display:flex;background:#f1f5f9;border-radius:10px;padding:3px;gap:3px}
+  .seg button{flex:1;border:none;background:transparent;padding:8px 4px;font-size:13px;font-weight:700;
+    border-radius:8px;cursor:pointer;color:var(--muted)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.12)}
+  .rrbtns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .rrbtns button{border:1.5px solid var(--line);background:#f8fafc;border-radius:999px;
+    padding:6px 12px;font-size:12.5px;font-weight:800;cursor:pointer}
+  .rrbtns button:hover{border-color:var(--blue);color:var(--blue)}
+  details.adv{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfdff}
+  details.adv summary{cursor:pointer;font-weight:800;font-size:13.5px}
+  .kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .kpi .box{border-radius:14px;padding:14px;border:1px solid var(--line)}
+  .kpi .box .t{font-size:12px;color:var(--muted);font-weight:700}
+  .kpi .box .v{font-size:21px;font-weight:900;margin-top:4px;letter-spacing:-.5px}
+  .kpi .box .s{font-size:12px;margin-top:2px;color:var(--muted)}
+  .box.red{background:var(--redbg);border-color:#fecaca}.box.red .v{color:var(--red)}
+  .box.green{background:var(--greenbg);border-color:#bbf7d0}.box.green .v{color:var(--green)}
+  .box.blue{background:#eff6ff;border-color:#bfdbfe}.box.blue .v{color:#1d4ed8}
+  .box.dark{background:#0f172a;border-color:#0f172a;color:#fff}.box.dark .t,.box.dark .s{color:#94a3b8}
+  .bar{margin-top:14px}
+  .bar .track{display:flex;height:16px;border-radius:999px;overflow:hidden;background:#f1f5f9;border:1px solid var(--line)}
+  .bar .fillR{background:linear-gradient(90deg,#f87171,#dc2626)}
+  .bar .fillG{background:linear-gradient(90deg,#4ade80,#16a34a)}
+  .bar .leg{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  .warn{display:none;margin-top:12px;background:var(--amberbg);border:1px solid #fde68a;color:var(--amber);
+    padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.6}
+  .warn.show{display:block}
+  .okmsg{margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;
+    padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.7}
+  .btnrow{display:flex;gap:8px;margin-top:14px}
+  .btnrow button{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;border:none}
+  #btnCopy{background:#0f172a;color:#fff}
+  #btnReset{background:#f1f5f9;color:var(--ink);border:1px solid var(--line)}
+  .favline{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .favline button{width:auto;padding:7px 12px;font-size:12.5px;border-radius:999px;cursor:pointer;
+    border:1.5px solid var(--line);background:#fff;font-weight:700}
+  #favBtn.starred{border-color:#f59e0b;color:#b45309;background:#fffbeb}
+  table.spec{width:100%;font-size:11.5px;border-collapse:collapse;margin-top:10px}
+  table.spec th,table.spec td{border:1px solid var(--line);padding:5px 6px;text-align:right}
+  table.spec th:first-child,table.spec td:first-child,table.spec th:nth-child(2),table.spec td:nth-child(2){text-align:left}
+  table.spec th{background:#f8fafc;position:sticky;top:0}
+  .scrollbox{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+  footer{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.7;text-align:center}
+  .favchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .favchips button{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);
+    background:#fff;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>📊 미국 선물 트레이딩 계산기 Pro</h1>
+  <p>들어가기 전에 <b>손절금액($)·손실률(%)·적정 계약수·손익비</b>를 한 화면에.
+  수수료·슬리피지·분할익절·일일손실상한·증거금까지 반영. 완전 무료, 오프라인, 설치 없음.</p>
+  <div class="badges"><span>✅ 50+ 전 종목 내장</span><span>✅ 자동 계산</span><span>✅ 입력 자동저장</span><span>✅ 결과 복사</span></div>
+</header>
+
+<div class="grid">
+<!-- ============ LEFT : INPUT ============ -->
+<div class="card">
+  <h2>① 종목 & 방향</h2>
+  <p class="desc">종목 검색 후 선택하세요. YM(다우)처럼 코드+설명이 함께 나옵니다. ★는 즐겨찾기.</p>
+  <label class="lbl">종목 검색</label>
+  <input id="search" placeholder="예: NQ, 골드, 오일, 다우, 비트…">
+  <div class="favchips" id="favChips"></div>
+  <label class="lbl">종목 선택</label>
+  <select id="symbol" size="1"></select>
+  <div class="specpill" id="specPill"></div>
+  <div class="favline">
+    <button id="favBtn" type="button">☆ 즐겨찾기 추가</button>
+    <span class="hint" id="favHint"></span>
+  </div>
+  <div id="customBox" style="display:none">
+    <div class="row">
+      <div><label class="lbl">1pt 당 달러 ($)</label><input id="customPv" type="number" step="any" value="50"></div>
+      <div><label class="lbl">틱 크기</label><input id="customTick" type="number" step="any" value="0.25"></div>
+    </div>
+  </div>
+
+  <label class="lbl">방향</label>
+  <div class="dir">
+    <button id="btnLong" class="on" type="button">▲ 롱 (매수)<small>손절 &lt; 진입 &lt; 익절</small></button>
+    <button id="btnShort" type="button">▼ 숏 (매도)<small>익절 &lt; 진입 &lt; 손절</small></button>
+  </div>
+
+  <h2 style="margin-top:20px">② 진입 · 손절 · 익절</h2>
+  <p class="desc">손절은 가격/틱/ATR 중 편한 방식으로. 익절은 직접 입력 or RR 버튼.</p>
+  <label class="lbl">손절 입력 방식</label>
+  <div class="seg" id="stopSeg">
+    <button data-m="price" class="on" type="button">가격으로</button>
+    <button data-m="ticks" type="button">틱 수로</button>
+    <button data-m="atr" type="button">ATR로</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <div><label class="lbl">진입가</label><input id="entry" type="number" step="any" placeholder="예: 6350.25"></div>
+    <div id="stopPriceBox"><label class="lbl">손절가</label><input id="stop" type="number" step="any" placeholder="예: 6345.25"></div>
+    <div id="stopTicksBox" style="display:none"><label class="lbl">손절 틱 수</label><input id="stopTicks" type="number" step="any" value="20"></div>
+  </div>
+  <div id="atrBox" style="display:none">
+    <div class="row">
+      <div><label class="lbl">ATR 값 (포인트)</label><input id="atrVal" type="number" step="any" value="8"></div>
+      <div><label class="lbl">ATR 배율</label><input id="atrMult" type="number" step="any" value="1.5"></div>
+    </div>
+    <div class="hint">손절폭 = ATR × 배율. 변동성 클수록 자동으로 넓게 잡아줍니다.</div>
+  </div>
+
+  <div class="row">
+    <div><label class="lbl">익절 TP1 (선택)</label><input id="target" type="number" step="any" placeholder="예: 6360.25"></div>
+    <div><label class="lbl">계약 수</label><input id="qty" type="number" step="1" min="1" value="1"></div>
+  </div>
+  <div class="rrbtns">
+    <span class="hint" style="align-self:center">RR로 익절 자동입력 →</span>
+    <button type="button" data-rr="1">1:1</button>
+    <button type="button" data-rr="1.5">1:1.5</button>
+    <button type="button" data-rr="2">1:2</button>
+    <button type="button" data-rr="3">1:3</button>
+  </div>
+
+  <details class="adv">
+    <summary>＋ 분할 익절 TP2 · TP3 (선택 — 비중 %로 가중평균 RR)</summary>
+    <div class="row" style="margin-top:8px">
+      <div><label class="lbl">TP2 가격</label><input id="tp2" type="number" step="any" placeholder="선택"></div>
+      <div><label class="lbl">TP2 비중 %</label><input id="tp2w" type="number" step="any" value="30"></div>
+    </div>
+    <div class="row">
+      <div><label class="lbl">TP3 가격</label><input id="tp3" type="number" step="any" placeholder="선택"></div>
+      <div><label class="lbl">TP3 비중 %</label><input id="tp3w" type="number" step="any" value="20"></div>
+    </div>
+    <div class="hint">TP1 비중 = 100 − TP2 − TP3 으로 자동 계산. 예: 50/30/20 분할 청산.</div>
+  </details>
+
+  <h2 style="margin-top:20px">③ 계좌 & 리스크</h2>
+  <div class="row">
+    <div><label class="lbl">계좌 잔고 ($)</label><input id="balance" type="number" step="any" value="10000"></div>
+    <div>
+      <label class="lbl">리스크 기준</label>
+      <div class="seg" id="riskSeg">
+        <button data-r="pct" class="on" type="button">% 기준</button>
+        <button data-r="usd" type="button">$ 금액</button>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div><label class="lbl" id="riskLbl">건당 리스크 1 (%)</label><input id="riskPct" type="number" step="any" value="1"></div>
+    <div><label class="lbl">일일 최대손실 $ (선택·프롭용)</label><input id="dailyMax" type="number" step="any" placeholder="예: 500"></div>
+  </div>
+
+  <details class="adv">
+    <summary>＋ 실전 비용 & 증거금 (수수료·슬리피지·마진)</summary>
+    <div class="row" style="margin-top:8px">
+      <div><label class="lbl">왕복 수수료 /계약 ($)</label><input id="fee" type="number" step="any" value="2.5"></div>
+      <div><label class="lbl">슬리피지 (틱 수)</label><input id="slip" type="number" step="any" value="0"></div>
+    </div>
+    <div class="row">
+      <div><label class="lbl">계약당 증거금 $ (선택)</label><input id="margin" type="number" step="any" placeholder="예: 13000"></div>
+      <div><label class="lbl">메모 (선택)</label><input id="memo" placeholder="예: 오늘 첫 타점"></div>
+    </div>
+    <div class="hint">순손실 = 총손실 + 수수료 + 슬리피지. 수수료는 이익에서도 차감됩니다.</div>
+  </details>
+</div>
+
+<!-- ============ RIGHT : RESULT ============ -->
+<div>
+<div class="card">
+  <h2>④ 결과 — 거래 전 확인</h2>
+  <p class="desc">입력하면 자동 계산됩니다. 빨강=잃는 돈, 초록=버는 돈.</p>
+  <div class="kpi">
+    <div class="box red"><div class="t">손실 금액 (총)</div><div class="v" id="kLoss">$—</div><div class="s" id="kLossSub">—</div></div>
+    <div class="box red"><div class="t">손실률 (계좌 대비)</div><div class="v" id="kLossPct">—</div><div class="s" id="kLossPctSub">—</div></div>
+    <div class="box green"><div class="t">익절 수익 (총)</div><div class="v" id="kProfit">$—</div><div class="s" id="kProfitSub">—</div></div>
+    <div class="box blue"><div class="t">손익비 RR</div><div class="v" id="kRR">—</div><div class="s" id="kRRSub">—</div></div>
+  </div>
+  <div class="bar">
+    <div class="track"><div class="fillR" id="barR" style="width:50%"></div><div class="fillG" id="barG" style="width:50%"></div></div>
+    <div class="leg"><span id="legR">위험 —</span><span id="legG">보상 —</span></div>
+  </div>
+  <div class="warn" id="warn"></div>
+  <div class="okmsg" id="detail">값을 입력하세요.</div>
+  <div class="btnrow">
+    <button id="btnCopy" type="button">📋 결과 복사</button>
+    <button id="btnReset" type="button">↺ 초기화</button>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>⑤ 전 종목 스펙표 (1pt 가치 · 틱)</h2>
+  <p class="desc">2026년 CME·CBOT·NYMEX·COMEX·ICE 기준 표준 스펙. 브로커·마이크로/미니 변형은 ±차이 가능 — 실주문 전 증권사 확인.</p>
+  <input id="specSearch" placeholder="스펙표 검색 (예: gold, 나스닥, 6E…)">
+  <div class="scrollbox"><table class="spec"><thead><tr>
+    <th>코드</th><th>종목</th><th>거래소</th><th>1pt($)</th><th>틱</th><th>틱가치($)</th>
+  </tr></thead><tbody id="specBody"></tbody></table></div>
+</div>
+</div>
+</div>
+
+<footer>손실률 = 순손실 ÷ 계좌잔고 × 100 · 순손실 = 포인트차 × pt가치 × 계약수 + 수수료 + 슬리피지 · 본 도구는 교육용이며 투자 조언이 아닙니다.</footer>
+</div>
+
+<script>
+/* ===== 전 종목 스펙: code, 종목명, 거래소, 1pt가치$, 틱크기 ===== */
+const SPECS=[
+ // 지수
+ {c:"ES",n:"S&P 500 E-mini (S&P)",e:"CME",pv:50,tick:0.25},
+ {c:"MES",n:"S&P 500 Micro E-mini (마이크로 S&P)",e:"CME",pv:5,tick:0.25},
+ {c:"NQ",n:"Nasdaq-100 E-mini (나스닥)",e:"CME",pv:20,tick:0.25},
+ {c:"MNQ",n:"Nasdaq-100 Micro E-mini (마이크로 나스닥)",e:"CME",pv:2,tick:0.25},
+ {c:"YM",n:"Dow Jones mini (다우)",e:"CBOT",pv:5,tick:1},
+ {c:"MYM",n:"Dow Jones Micro (마이크로 다우)",e:"CBOT",pv:0.5,tick:1},
+ {c:"RTY",n:"Russell 2000 E-mini (러셀)",e:"CME",pv:50,tick:0.1},
+ {c:"M2K",n:"Russell 2000 Micro (마이크로 러셀)",e:"CME",pv:5,tick:0.1},
+ {c:"EMD",n:"S&P MidCap 400 E-mini (중형주)",e:"CME",pv:100,tick:0.1},
+ {c:"NKD",n:"Nikkei 225 (닛케이)",e:"CME",pv:5,tick:5},
+ {c:"VX",n:"VIX 변동성지수",e:"CFE",pv:1000,tick:0.05},
+ // 금리/채권
+ {c:"ZB",n:"30년 국채 (T-Bond)",e:"CBOT",pv:1000,tick:0.03125},
+ {c:"UB",n:"울트라 T-Bond",e:"CBOT",pv:1000,tick:0.03125},
+ {c:"ZN",n:"10년 국채 (T-Note)",e:"CBOT",pv:1000,tick:0.015625},
+ {c:"TN",n:"울트라 10년 국채",e:"CBOT",pv:1000,tick:0.03125},
+ {c:"ZF",n:"5년 국채",e:"CBOT",pv:1000,tick:0.0078125},
+ {c:"ZT",n:"2년 국채",e:"CBOT",pv:2000,tick:0.00390625},
+ // 통화
+ {c:"6E",n:"유로 FX",e:"CME",pv:125000,tick:0.00005},
+ {c:"6J",n:"일본 엔 FX",e:"CME",pv:12500000,tick:0.0000005},
+ {c:"6B",n:"영국 파운드 FX",e:"CME",pv:62500,tick:0.0001},
+ {c:"6C",n:"캐나다 달러 FX",e:"CME",pv:100000,tick:0.00005},
+ {c:"6A",n:"호주 달러 FX",e:"CME",pv:100000,tick:0.0001},
+ {c:"M6E",n:"유로 Micro FX",e:"CME",pv:12500,tick:0.0001},
+ // 에너지
+ {c:"CL",n:"WTI 원유",e:"NYMEX",pv:1000,tick:0.01},
+ {c:"MCL",n:"WTI 원유 Micro",e:"NYMEX",pv:100,tick:0.01},
+ {c:"NG",n:"천연가스",e:"NYMEX",pv:10000,tick:0.001},
+ {c:"QG",n:"천연가스 E-mini",e:"NYMEX",pv:2500,tick:0.005},
+ {c:"HO",n:"난방유",e:"NYMEX",pv:42000,tick:0.0001},
+ {c:"RB",n:"RBOB 휘발유",e:"NYMEX",pv:42000,tick:0.0001},
+ {c:"B",n:"브렌트유",e:"ICE",pv:1000,tick:0.01},
+ // 금속
+ {c:"GC",n:"금 Gold",e:"COMEX",pv:100,tick:0.1},
+ {c:"MGC",n:"금 Micro",e:"COMEX",pv:10,tick:0.1},
+ {c:"SI",n:"은 Silver",e:"COMEX",pv:5000,tick:0.005},
+ {c:"SIL",n:"은 Micro (1000oz)",e:"COMEX",pv:1000,tick:0.01},
+ {c:"HG",n:"구리 Copper",e:"COMEX",pv:25000,tick:0.0005},
+ {c:"MHG",n:"구리 Micro",e:"COMEX",pv:2500,tick:0.0005},
+ {c:"PL",n:"백금 Platinum",e:"NYMEX",pv:50,tick:0.1},
+ {c:"PA",n:"팔라듐 Palladium",e:"NYMEX",pv:100,tick:0.1},
+ // 농산물
+ {c:"ZC",n:"옥수수 Corn",e:"CBOT",pv:5000,tick:0.0025},
+ {c:"ZS",n:"대두 Soybean",e:"CBOT",pv:5000,tick:0.0025},
+ {c:"ZW",n:"밀 Wheat",e:"CBOT",pv:5000,tick:0.0025},
+ {c:"ZM",n:"대두박 Meal",e:"CBOT",pv:100,tick:0.1},
+ {c:"ZL",n:"대두유 Oil",e:"CBOT",pv:60000,tick:0.0001},
+ {c:"LE",n:"생우 Live Cattle",e:"CME",pv:40000,tick:0.00025},
+ {c:"HE",n:"돈육 Lean Hog",e:"CME",pv:40000,tick:0.00025},
+ {c:"GF",n:"육성우 Feeder Cattle",e:"CME",pv:50000,tick:0.00025},
+ // ICE 농산물·지수
+ {c:"DX",n:"달러인덱스",e:"ICE US",pv:1000,tick:0.005},
+ {c:"SB",n:"설탕 Sugar #11",e:"ICE US",pv:112000,tick:0.0001},
+ {c:"CC",n:"코코아 Cocoa",e:"ICE US",pv:10,tick:1},
+ {c:"KC",n:"커피 Coffee C",e:"ICE US",pv:37500,tick:0.0005},
+ {c:"CT",n:"면화 Cotton",e:"ICE US",pv:50000,tick:0.0001},
+ {c:"OJ",n:"오렌지주스",e:"ICE US",pv:15000,tick:0.0005},
+ {c:"TF",n:"Russell 2000 mini (ICE)",e:"ICE US",pv:50,tick:0.1},
+ // 암호화폐
+ {c:"BTC",n:"비트코인 (5 BTC)",e:"CME",pv:5,tick:5},
+ {c:"MBT",n:"비트코인 Micro (0.1 BTC)",e:"CME",pv:0.1,tick:5},
+ {c:"ETH",n:"이더리움 (50 ETH)",e:"CME",pv:50,tick:0.5},
+ {c:"MET",n:"이더리움 Micro (0.1 ETH)",e:"CME",pv:0.1,tick:0.5},
+ {c:"CUSTOM",n:"직접 입력 (기타 종목)",e:"—",pv:null,tick:null},
+];
+const $=id=>document.getElementById(id);
+let direction="long", stopMode="price", riskMode="pct";
+const sel=$("symbol");
+
+function fmt(n,d=2){if(!isFinite(n))return"—";return n.toLocaleString(undefined,{maximumFractionDigits:d});}
+function tickVal(s){return s.pv*s.tick;}
+
+function buildSymbols(filter=""){
+  const f=filter.trim().toLowerCase();
+  sel.innerHTML="";
+  const cats=[["지수 선물",["CME","CBOT","CFE"]],["금리·채권",["CBOT"]],["통화",["CME"]]];
+  // 단순화: 거래소별 optgroup 대신 전체+카테고리 표시. 검색 필터 적용.
+  const groups={};
+  SPECS.forEach(s=>{
+    let g="지수"; if(["ZB","UB","ZN","TN","ZF","ZT"].includes(s.c))g="금리·채권";
+    else if(["6E","6J","6B","6C","6A","M6E"].includes(s.c))g="통화(FX)";
+    else if(["CL","MCL","NG","QG","HO","RB","B"].includes(s.c))g="에너지";
+    else if(["GC","MGC","SI","SIL","HG","MHG","PL","PA"].includes(s.c))g="금속";
+    else if(["ZC","ZS","ZW","ZM","ZL","LE","HE","GF"].includes(s.c))g="곡물·축산";
+    else if(["DX","SB","CC","KC","CT","OJ","TF"].includes(s.c))g="ICE (달러·소프트)";
+    else if(["BTC","MBT","ETH","MET"].includes(s.c))g="암호화폐";
+    else if(s.c==="CUSTOM")g="기타";
+    (groups[g]=groups[g]||[]).push(s);
+  });
+  Object.keys(groups).forEach(g=>{
+    const og=document.createElement("optgroup"); og.label=g;
+    groups[g].forEach(s=>{
+      const hay=(s.c+" "+s.n+" "+s.e).toLowerCase();
+      if(f&&!hay.includes(f))return;
+      const o=document.createElement("option"); o.value=s.c;
+      o.textContent = s.c==="CUSTOM" ? "✏️ 직접 입력" : `${s.c} (${s.n})`;
+      og.appendChild(o);
+    });
+    if(og.children.length)sel.appendChild(og);
+  });
+  if(!sel.options.length){const o=document.createElement("option");o.textContent="검색 결과 없음";sel.appendChild(o);}
+}
+function curSpec(){
+  const s=SPECS.find(x=>x.c===sel.value)||SPECS[0];
+  if(s.c==="CUSTOM"){
+    $("customBox").style.display="block";
+    return{pv:parseFloat($("customPv").value),tick:parseFloat($("customTick").value),code:"CUSTOM",name:"직접 입력"};
+  }
+  $("customBox").style.display="none";
+  return{...s,code:s.c,name:`${s.c} (${s.n})`};
+}
+function refreshPill(){
+  const s=curSpec();
+  if(!isFinite(s.pv)||!isFinite(s.tick)){$("specPill").innerHTML="포인트 가치와 틱을 입력하세요.";return s;}
+  const ex=SPECS.find(x=>x.c===s.code);
+  $("specPill").innerHTML=`<b>${s.name}</b>${ex?` · ${ex.e}`:""} · 1pt=<b>$${fmt(s.pv)}</b> · 틱=${s.tick} · 틱가치=<b>$${fmt(tickVal(s))}</b>`;
+  return s;
+}
+function renderSpecTable(f=""){
+  const tb=$("specBody");tb.innerHTML="";
+  SPECS.filter(s=>s.c!=="CUSTOM").forEach(s=>{
+    if(f&&!(s.c+" "+s.n+" "+s.e).toLowerCase().includes(f.toLowerCase()))return;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><b>${s.c}</b></td><td>${s.n}</td><td>${s.e}</td><td>$${fmt(s.pv)}</td><td>${s.tick}</td><td>$${fmt(tickVal(s))}</td>`;
+    tr.style.cursor="pointer";tr.title="클릭하면 선택";
+    tr.onclick=()=>{sel.value=s.c;$("search").value="";buildSymbols();sel.value=s.c;calc();window.scrollTo({top:0,behavior:"smooth"});};
+    tb.appendChild(tr);
+  });
+}
+
+/* 방향/모드 버튼 */
+$("btnLong").onclick=()=>{direction="long";$("btnLong").classList.add("on");$("btnShort").classList.remove("on");calc();};
+$("btnShort").onclick=()=>{direction="short";$("btnShort").classList.add("on");$("btnLong").classList.remove("on");calc();};
+document.querySelectorAll("#stopSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  stopMode=b.dataset.m;
+  $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
+  $("stopTicksBox").style.display=stopMode==="ticks"?"block":"none";
+  $("atrBox").style.display=stopMode==="atr"?"block":"none";
+  calc();
+});
+document.querySelectorAll("#riskSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  riskMode=b.dataset.r;
+  $("riskLbl").textContent=riskMode==="pct"?"건당 리스크 1 (%)":"건당 리스크 ($)";
+  $("riskPct").value=riskMode==="pct"?"1":"100";
+  calc();
+});
+document.querySelectorAll(".rrbtns button").forEach(b=>b.onclick=()=>{
+  const s=refreshPill(),e=parseFloat($("entry").value);
+  let rp=riskPoints(s,e); if(!(rp>0)){alert("먼저 진입가와 손절을 입력하세요.");return;}
+  const rr=parseFloat(b.dataset.rr), tp=direction==="long"?e+rp*rr:e-rp*rr;
+  $("target").value=+tp.toFixed(6);calc();
+});
+function riskPoints(s,entry){
+  if(stopMode==="price"){const st=parseFloat($("stop").value);
+    if(!isFinite(entry)||!isFinite(st))return NaN;
+    return direction==="long"?entry-st:st-entry;}
+  if(stopMode==="ticks"){const t=parseFloat($("stopTicks").value);
+    if(!isFinite(t)||!isFinite(s.tick))return NaN;return t*s.tick;}
+  const a=parseFloat($("atrVal").value),m=parseFloat($("atrMult").value);
+  if(!isFinite(a)||!isFinite(m))return NaN;return a*m;
+}
+
+/* 즐겨찾기 */
+let favs=[];try{favs=JSON.parse(localStorage.getItem("fut_favs")||"[]");}catch(e){favs=[];}
+function renderFavs(){
+  const box=$("favChips");box.innerHTML="";
+  $("favBtn").classList.toggle("starred",favs.includes(sel.value));
+  $("favBtn").textContent=favs.includes(sel.value)?"★ 즐겨찾기됨":"☆ 즐겨찾기 추가";
+  $("favHint").textContent=favs.length?`즐겨찾기 ${favs.length}개 — 클릭 즉시 이동`:"";
+  favs.forEach(c=>{const b=document.createElement("button");b.type="button";b.textContent=c;
+    b.onclick=()=>{sel.value=c;buildSymbolsKeep(c);calc();};box.appendChild(b);});
+}
+function buildSymbolsKeep(code){const f=$("search").value;buildSymbols(f);if([...sel.options].some(o=>o.value===code))sel.value=code;}
+$("favBtn").onclick=()=>{
+  const c=sel.value;if(c==="CUSTOM")return;
+  favs=favs.includes(c)?favs.filter(x=>x!==c):[...favs,c];
+  localStorage.setItem("fut_favs",JSON.stringify(favs));renderFavs();
+};
+
+/* 메인 계산 */
+let lastText="";
+function calc(){
+  const s=refreshPill();
+  const warn=$("warn");warn.classList.remove("show");
+  const e=parseFloat($("entry").value);
+  const qty=Math.max(1,parseInt($("qty").value||"1",10)||1);
+  const bal=parseFloat($("balance").value);
+  const feeEach=parseFloat($("fee").value||"0"), slipT=parseFloat($("slip").value||"0");
+  const margin=parseFloat($("margin").value);
+  const dailyMax=parseFloat($("dailyMax").value);
+  const t1=parseFloat($("target").value), t2=parseFloat($("tp2").value), t3=parseFloat($("tp3").value);
+  let w2=parseFloat($("tp2w").value||"0"), w3=parseFloat($("tp3w").value||"0");
+
+  if(!isFinite(s.pv)||!isFinite(s.tick)||!isFinite(e)){
+    setEmpty("종목·진입가를 입력하세요.");save();return;}
+  const rp=riskPoints(s,e);
+  if(!(rp>0)){showWarn(direction==="long"?"롱은 손절이 진입보다 낮아야 합니다. (숏은 반대)":"숏은 손절이 진입보다 높아야 합니다. (롱은 반대)");setEmpty("손절 설정을 확인하세요.");save();return;}
+  const tv=tickVal(s);
+  const ticks=rp/s.tick;
+  const grossLoss=rp*s.pv*qty;
+  const feeTot=feeEach*qty, slipTot=slipT*tv*qty;
+  const netLoss=grossLoss+feeTot+slipTot;
+  const lossPct=isFinite(bal)&&bal>0?netLoss/bal*100:NaN;
+
+  // 수익 (TP1~3 가중)
+  let profits=[];
+  const pp=p=>direction==="long"?p-e:e-p;
+  if(isFinite(t1)&&pp(t1)>0)profits.push({pts:pp(t1),w:Math.max(0,100-(isFinite(t2)&&pp(t2)>0?w2:0)-(isFinite(t3)&&pp(t3)>0?w3:0))});
+  if(isFinite(t2)&&pp(t2)>0)profits.push({pts:pp(t2),w:w2});
+  if(isFinite(t3)&&pp(t3)>0)profits.push({pts:pp(t3),w:w3});
+  let wsum=profits.reduce((a,b)=>a+b.w,0);
+  let profitPts=0,grossProfit=0;
+  if(profits.length&&wsum>0){profits.forEach(p=>{profitPts+=p.pts*p.w/wsum;});grossProfit=profitPts*s.pv*qty;}
+  const netProfit=grossProfit>0?grossProfit-feeTot-slipTot:NaN;
+  const rr=grossProfit>0&&netLoss>0?(netProfit/netLoss):(grossProfit>0?grossProfit/Math.max(netLoss,1e-9):NaN);
+  const profitPct=isFinite(netProfit)&&isFinite(bal)&&bal>0?netProfit/bal*100:NaN;
+
+  // 적정 계약수 역산
+  let budget=NaN;
+  if(isFinite(bal)&&bal>0){
+    const r=parseFloat($("riskPct").value);
+    if(isFinite(r))budget=riskMode==="pct"?bal*r/100:r;
+  }
+  const riskPerContract=rp*s.pv+feeEach+slipT*tv;
+  const maxC=isFinite(budget)&&riskPerContract>0?Math.floor(budget/riskPerContract):NaN;
+
+  // KPI
+  $("kLoss").textContent="$"+fmt(netLoss);
+  $("kLossSub").textContent=`총 ${fmt(ticks,1)}틱 · ${fmt(rp,4)}pt × ${qty}계약 (수수료 $${fmt(feeTot)}${slipT?`+슬립 $${fmt(slipTot)}`:""})`;
+  $("kLossPct").textContent=isFinite(lossPct)?lossPct.toFixed(2)+"%":"—";
+  $("kLossPctSub").textContent=isFinite(bal)&&bal>0?`잔고 $${fmt(bal)} 기준`:"잔고 입력 시 표시";
+  $("kProfit").textContent=isFinite(netProfit)?"$"+fmt(netProfit):(isFinite(t1)||isFinite(t2)?"방향 불일치":"$—");
+  $("kProfitSub").textContent=isFinite(netProfit)?`+${fmt(profitPts,4)}pt 가중평균${isFinite(profitPct)?` (${profitPct.toFixed(2)}%)`:""}`:"익절가 입력 시 표시";
+  $("kRR").textContent=isFinite(rr)?"1 : "+rr.toFixed(2):"—";
+  $("kRRSub").textContent=profits.length>1?`TP ${profits.length}개 분할 가중`:(isFinite(rr)?"순수익 ÷ 순손실":"—");
+
+  // 막대
+  const L=netLoss,P=isFinite(netProfit)&&netProfit>0?netProfit:0;
+  const tot=L+P||1;$("barR").style.width=(L/tot*100)+"%";$("barG").style.width=(P/tot*100)+"%";
+  $("legR").textContent=`위험 $${fmt(L)}`;$("legG").textContent=`보상 $${fmt(P)}`;
+
+  // 경고/가이드
+  let w=[];
+  const rem=Math.abs(ticks-Math.round(ticks));
+  if(rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
+  if(isFinite(maxC)){
+    if(maxC<=0)w.push(`⚠️ 이 손절폭(${fmt(rp,4)}pt)으로는 리스크 $${fmt(budget)} 안에 1계약도 불가 — <b>MES·MNQ 등 마이크로, 손절 축소, 리스크% 상향</b> 중 하나를 고려하세요 (계약당 $${fmt(riskPerContract)} 위험).`);
+    else if(qty>maxC)w.push(`⚠️ 현재 ${qty}계약은 리스크 $${fmt(budget)} 초과 — 적정은 <b>${maxC}계약 이하</b> (계약당 $${fmt(riskPerContract)} 위험).`);
+  }
+  if(isFinite(dailyMax)&&dailyMax>0&&netLoss>dailyMax)w.push(`⚠️ 이번 거래 순손실 $${fmt(netLoss)}이 일일상한 $${fmt(dailyMax)} 초과 — 계약수 축소/손절 축소 필요.`);
+  if(margin>0&&isFinite(bal)&&bal>0){
+    const mu=margin*qty/bal*100;
+    if(mu>100)w.push(`⚠️ 증거금 $${fmt(margin*qty)}이 잔고 초과 (${mu.toFixed(1)}%).`);
+  }
+  if(w.length){warn.innerHTML=w.join("<br>");warn.classList.add("show");}
+
+  // 상세
+  let d=`<b>${direction==="long"?"▲ 롱":"▼ 숏"} · ${s.name} × ${qty}계약</b>`;
+  if(stopMode!=="price")d+=` (손절 ${stopMode==="ticks"?$("stopTicks").value+"틱":"ATR "+$("atrVal").value+"×"+$("atrMult").value})`;
+  d+=`<br>손절폭 <b>${fmt(rp,4)}pt</b> (${fmt(ticks,1)}틱) · 계약당 위험 <b>$${fmt(riskPerContract)}</b>`;
+  if(isFinite(budget))d+=`<br>리스크 예산 $${fmt(budget)} → 적정 계약수 <b>${isFinite(maxC)?maxC+"계약":"—"}</b> (내림 처리)`;
+  if(margin>0){const notional=e*s.pv*qty;
+    d+=`<br>명목가치 $${fmt(notional)}${isFinite(bal)&&bal>0?` · 증거금 ${fmt(margin*qty/bal*100,1)}% · 레버리지 ${(notional/bal).toFixed(1)}x`:""}`;}
+  if($("memo").value.trim())d+=`<br>📝 ${$("memo").value.trim().replace(/</g,"&lt;")}`;
+  $("detail").innerHTML=d;
+
+  lastText=`[${s.code} ${direction==="long"?"롱":"숏"} x${qty}] 진입${e} 손절폭${fmt(rp,4)}pt / 손실 $${fmt(netLoss)} (${isFinite(lossPct)?lossPct.toFixed(2)+"%":"-"}) / 수익 $${isFinite(netProfit)?fmt(netProfit):"-"} / RR ${isFinite(rr)?"1:"+rr.toFixed(2):"-"} / 적정 ${isFinite(maxC)?maxC+"계약":"-"}`;
+  save();
+}
+function setEmpty(msg){
+  $("kLoss").textContent="$—";$("kLossPct").textContent="—";$("kProfit").textContent="$—";$("kRR").textContent="—";
+  $("kLossSub").textContent=msg;$("kLossPctSub").textContent="";$("kProfitSub").textContent="";$("kRRSub").textContent="";
+  $("detail").textContent=msg;lastText=msg;
+}
+function showWarn(t){const w=$("warn");w.innerHTML=t;w.classList.add("show");}
+$("btnCopy").onclick=async()=>{
+  try{await navigator.clipboard.writeText(lastText);$("btnCopy").textContent="✅ 복사됨!";setTimeout(()=>$("btnCopy").textContent="📋 결과 복사",1200);}
+  catch(e){prompt("복사해서 사용:",lastText);}
+};
+$("btnReset").onclick=()=>{
+  ["entry","stop","target","tp2","tp3","stopTicks"].forEach(id=>$(id).value="");
+  $("qty").value="1";$("balance").value="10000";$("riskPct").value="1";
+  $("dailyMax").value="";$("margin").value="";$("memo").value="";$("fee").value="2.5";$("slip").value="0";
+  localStorage.removeItem("fut_calc_v2");calc();
+};
+
+/* 검색/자동저장 */
+$("search").addEventListener("input",()=>{buildSymbols($("search").value);calc();});
+sel.addEventListener("change",()=>{renderFavs();calc();});
+$("specSearch").addEventListener("input",e=>renderSpecTable(e.target.value));
+function save(){
+  const data={sym:sel.value,customPv:$("customPv").value,customTick:$("customTick").value,
+    entry:$("entry").value,stop:$("stop").value,stopTicks:$("stopTicks").value,atrVal:$("atrVal").value,
+    atrMult:$("atrMult").value,target:$("target").value,tp2:$("tp2").value,tp2w:$("tp2w").value,
+    tp3:$("tp3").value,tp3w:$("tp3w").value,qty:$("qty").value,balance:$("balance").value,
+    riskPct:$("riskPct").value,dailyMax:$("dailyMax").value,fee:$("fee").value,slip:$("slip").value,
+    margin:$("margin").value,memo:$("memo").value,direction,stopMode,riskMode};
+  try{localStorage.setItem("fut_calc_v2",JSON.stringify(data));}catch(e){}
+}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem("fut_calc_v2")||"null");if(!d)return;
+    direction=d.direction||"long";stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
+    $("btnLong").classList.toggle("on",direction==="long");$("btnShort").classList.toggle("on",direction==="short");
+    document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.toggle("on",x.dataset.m===stopMode));
+    document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.toggle("on",x.dataset.r===riskMode));
+    $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
+    $("stopTicksBox").style.display=stopMode==="ticks"?"block":"none";
+    $("atrBox").style.display=stopMode==="atr"?"block":"none";
+    $("riskLbl").textContent=riskMode==="pct"?"건당 리스크 1 (%)":"건당 리스크 ($)";
+    Object.keys(d).forEach(k=>{if($(k)&&k!=="sym")$(k).value=d[k];});
+    if(d.sym){buildSymbols("");sel.value=d.sym;}
+  }catch(e){}
+}
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",calc));
+
+/* init */
+buildSymbols("");load();renderFavs();refreshPill();renderSpecTable("");calc();
+</script>
+</body>
+</html>
