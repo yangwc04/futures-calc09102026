@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>미국 선물 트레이딩 계산기 Pro — 손절·포지션·RR 한 번에</title>
+<title>선물 계산기</title>
 <style>
   :root{
     --bg:#eef2ff; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
@@ -94,10 +94,7 @@
 <div class="wrap">
 
 <header class="hero">
-  <h1>📊 미국 선물 트레이딩 계산기 Pro</h1>
-  <p>들어가기 전에 <b>손절금액($)·손실률(%)·적정 계약수·손익비</b>를 한 화면에.
-  수수료·슬리피지·분할익절·일일손실상한·증거금까지 반영. 완전 무료, 오프라인, 설치 없음.</p>
-  <div class="badges"><span>✅ 50+ 전 종목 내장</span><span>✅ 자동 계산</span><span>✅ 입력 자동저장</span><span>✅ 결과 복사</span></div>
+  <h1>선물 계산기</h1>
 </header>
 
 <div class="grid">
@@ -122,20 +119,11 @@
     </div>
   </div>
 
-  <label class="lbl">방향</label>
-  <div class="dir">
-    <button id="btnLong" class="on" type="button">▲ 롱 (매수)<small>손절 &lt; 진입 &lt; 익절</small></button>
-    <button id="btnShort" type="button">▼ 숏 (매도)<small>익절 &lt; 진입 &lt; 손절</small></button>
-  </div>
+  <label class="lbl">방향 (자동 판정)</label>
+  <div class="specpill" id="dirBadge" style="margin-top:6px">진입가와 손절가를 입력하세요 (진입&gt;손절=롱, 진입&lt;손절=숏)</div>
 
   <h2 style="margin-top:20px">② 진입 · 손절 · 익절</h2>
-  <p class="desc">손절은 가격/틱/ATR 중 편한 방식으로. 익절은 직접 입력 or RR 버튼.</p>
-  <label class="lbl">손절 입력 방식</label>
-  <div class="seg" id="stopSeg">
-    <button data-m="price" class="on" type="button">가격으로</button>
-    <button data-m="ticks" type="button">틱 수로</button>
-    <button data-m="atr" type="button">ATR로</button>
-  </div>
+  <p class="desc">익절은 직접 입력 or RR 버튼.</p>
   <div class="row" style="margin-top:10px">
     <div><label class="lbl">진입가</label><input id="entry" type="number" step="any" placeholder="예: 6350.25"></div>
     <div id="stopPriceBox"><label class="lbl">손절가</label><input id="stop" type="number" step="any" placeholder="예: 6345.25"></div>
@@ -161,19 +149,6 @@
     <button type="button" data-rr="3">1:3</button>
   </div>
 
-  <details class="adv">
-    <summary>＋ 분할 익절 TP2 · TP3 (선택 — 비중 %로 가중평균 RR)</summary>
-    <div class="row" style="margin-top:8px">
-      <div><label class="lbl">TP2 가격</label><input id="tp2" type="number" step="any" placeholder="선택"></div>
-      <div><label class="lbl">TP2 비중 %</label><input id="tp2w" type="number" step="any" value="30"></div>
-    </div>
-    <div class="row">
-      <div><label class="lbl">TP3 가격</label><input id="tp3" type="number" step="any" placeholder="선택"></div>
-      <div><label class="lbl">TP3 비중 %</label><input id="tp3w" type="number" step="any" value="20"></div>
-    </div>
-    <div class="hint">TP1 비중 = 100 − TP2 − TP3 으로 자동 계산. 예: 50/30/20 분할 청산.</div>
-  </details>
-
   <h2 style="margin-top:20px">③ 계좌 & 리스크</h2>
   <div class="row">
     <div><label class="lbl">계좌 잔고 ($)</label><input id="balance" type="number" step="any" value="10000"></div>
@@ -193,7 +168,7 @@
   <details class="adv">
     <summary>＋ 실전 비용 & 증거금 (수수료·슬리피지·마진)</summary>
     <div class="row" style="margin-top:8px">
-      <div><label class="lbl">왕복 수수료 /계약 ($)</label><input id="fee" type="number" step="any" value="2.5"></div>
+      <div><label class="lbl">왕복 수수료 /계약 ($)</label><input id="fee" type="number" step="any" value="2"></div>
       <div><label class="lbl">슬리피지 (틱 수)</label><input id="slip" type="number" step="any" value="0"></div>
     </div>
     <div class="row">
@@ -312,7 +287,14 @@ const SPECS=[
  {c:"CUSTOM",n:"직접 입력 (기타 종목)",e:"—",pv:null,tick:null},
 ];
 const $=id=>document.getElementById(id);
-let direction="long", stopMode="price", riskMode="pct";
+let stopMode="price", riskMode="pct";
+/* 방향 자동 판정: 진입>손절=롱, 진입<손절=숏 (틱/ATR 모드에서 가격 미입력 시 롱 가정) */
+function currentDir(){
+  const e=parseFloat($("entry").value), st=parseFloat($("stop").value);
+  if(isFinite(e)&&isFinite(st)&&e!==st)return e>st?"long":"short";
+  if(stopMode!=="price")return "long";
+  return null;
+}
 const sel=$("symbol");
 
 function fmt(n,d=2){if(!isFinite(n))return"—";return n.toLocaleString(undefined,{maximumFractionDigits:d});}
@@ -376,9 +358,7 @@ function renderSpecTable(f=""){
   });
 }
 
-/* 방향/모드 버튼 */
-$("btnLong").onclick=()=>{direction="long";$("btnLong").classList.add("on");$("btnShort").classList.remove("on");calc();};
-$("btnShort").onclick=()=>{direction="short";$("btnShort").classList.add("on");$("btnLong").classList.remove("on");calc();};
+/* 방향은 진입/손절가로 자동 판정 (수동 버튼 삭제됨) */
 document.querySelectorAll("#stopSeg button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.remove("on"));b.classList.add("on");
   stopMode=b.dataset.m;
@@ -396,14 +376,15 @@ document.querySelectorAll("#riskSeg button").forEach(b=>b.onclick=()=>{
 });
 document.querySelectorAll(".rrbtns button").forEach(b=>b.onclick=()=>{
   const s=refreshPill(),e=parseFloat($("entry").value);
-  let rp=riskPoints(s,e); if(!(rp>0)){alert("먼저 진입가와 손절을 입력하세요.");return;}
-  const rr=parseFloat(b.dataset.rr), tp=direction==="long"?e+rp*rr:e-rp*rr;
+  const dir=currentDir(); let rp=riskPoints(s,e,dir);
+  if(!(rp>0)||!dir){alert("먼저 진입가와 손절을 입력하세요. (진입≠손절)");return;}
+  const rr=parseFloat(b.dataset.rr), tp=dir==="long"?e+rp*rr:e-rp*rr;
   $("target").value=+tp.toFixed(6);calc();
 });
-function riskPoints(s,entry){
+function riskPoints(s,entry,dir){
   if(stopMode==="price"){const st=parseFloat($("stop").value);
     if(!isFinite(entry)||!isFinite(st))return NaN;
-    return direction==="long"?entry-st:st-entry;}
+    return dir==="long"?entry-st:st-entry;}
   if(stopMode==="ticks"){const t=parseFloat($("stopTicks").value);
     if(!isFinite(t)||!isFinite(s.tick))return NaN;return t*s.tick;}
   const a=parseFloat($("atrVal").value),m=parseFloat($("atrMult").value);
@@ -438,13 +419,18 @@ function calc(){
   const feeEach=parseFloat($("fee").value||"0"), slipT=parseFloat($("slip").value||"0");
   const margin=parseFloat($("margin").value);
   const dailyMax=parseFloat($("dailyMax").value);
-  const t1=parseFloat($("target").value), t2=parseFloat($("tp2").value), t3=parseFloat($("tp3").value);
-  let w2=parseFloat($("tp2w").value||"0"), w3=parseFloat($("tp3w").value||"0");
+  const t1=parseFloat($("target").value);
 
   if(!isFinite(s.pv)||!isFinite(s.tick)||!isFinite(e)){
     setEmpty("종목·진입가를 입력하세요.");save();return;}
-  const rp=riskPoints(s,e);
-  if(!(rp>0)){showWarn(direction==="long"?"롱은 손절이 진입보다 낮아야 합니다. (숏은 반대)":"숏은 손절이 진입보다 높아야 합니다. (롱은 반대)");setEmpty("손절 설정을 확인하세요.");save();return;}
+  const dir=currentDir();
+  const badge=$("dirBadge");
+  if(badge)badge.innerHTML=!dir
+    ? "진입가와 손절가를 입력하세요 (진입&gt;손절=롱, 진입&lt;손절=숏)"
+    : dir==="long" ? "<b>▲ 롱 (매수) 자동</b> — 손절 &lt; 진입" : "<b>▼ 숏 (매도) 자동</b> — 진입 &lt; 손절";
+  if(!dir){setEmpty("손절가를 진입가와 다르게 입력하세요.");save();return;}
+  const rp=riskPoints(s,e,dir);
+  if(!(rp>0)){showWarn("손절 설정을 확인하세요.");setEmpty("손절 설정을 확인하세요.");save();return;}
   const tv=tickVal(s);
   const ticks=rp/s.tick;
   const grossLoss=rp*s.pv*qty;
@@ -452,15 +438,10 @@ function calc(){
   const netLoss=grossLoss+feeTot+slipTot;
   const lossPct=isFinite(bal)&&bal>0?netLoss/bal*100:NaN;
 
-  // 수익 (TP1~3 가중)
-  let profits=[];
-  const pp=p=>direction==="long"?p-e:e-p;
-  if(isFinite(t1)&&pp(t1)>0)profits.push({pts:pp(t1),w:Math.max(0,100-(isFinite(t2)&&pp(t2)>0?w2:0)-(isFinite(t3)&&pp(t3)>0?w3:0))});
-  if(isFinite(t2)&&pp(t2)>0)profits.push({pts:pp(t2),w:w2});
-  if(isFinite(t3)&&pp(t3)>0)profits.push({pts:pp(t3),w:w3});
-  let wsum=profits.reduce((a,b)=>a+b.w,0);
-  let profitPts=0,grossProfit=0;
-  if(profits.length&&wsum>0){profits.forEach(p=>{profitPts+=p.pts*p.w/wsum;});grossProfit=profitPts*s.pv*qty;}
+  // 수익 (익절가 단일)
+  const pp=p=>dir==="long"?p-e:e-p;
+  let profitPts=NaN, grossProfit=0;
+  if(isFinite(t1)&&pp(t1)>0){profitPts=pp(t1);grossProfit=profitPts*s.pv*qty;}
   const netProfit=grossProfit>0?grossProfit-feeTot-slipTot:NaN;
   const rr=grossProfit>0&&netLoss>0?(netProfit/netLoss):(grossProfit>0?grossProfit/Math.max(netLoss,1e-9):NaN);
   const profitPct=isFinite(netProfit)&&isFinite(bal)&&bal>0?netProfit/bal*100:NaN;
@@ -479,10 +460,10 @@ function calc(){
   $("kLossSub").textContent=`총 ${fmt(ticks,1)}틱 · ${fmt(rp,4)}pt × ${qty}계약 (수수료 $${fmt(feeTot)}${slipT?`+슬립 $${fmt(slipTot)}`:""})`;
   $("kLossPct").textContent=isFinite(lossPct)?lossPct.toFixed(2)+"%":"—";
   $("kLossPctSub").textContent=isFinite(bal)&&bal>0?`잔고 $${fmt(bal)} 기준`:"잔고 입력 시 표시";
-  $("kProfit").textContent=isFinite(netProfit)?"$"+fmt(netProfit):(isFinite(t1)||isFinite(t2)?"방향 불일치":"$—");
-  $("kProfitSub").textContent=isFinite(netProfit)?`+${fmt(profitPts,4)}pt 가중평균${isFinite(profitPct)?` (${profitPct.toFixed(2)}%)`:""}`:"익절가 입력 시 표시";
+  $("kProfit").textContent=isFinite(netProfit)?"$"+fmt(netProfit):(isFinite(t1)?"방향 불일치":"$—");
+  $("kProfitSub").textContent=isFinite(netProfit)?`+${fmt(profitPts,4)}pt${isFinite(profitPct)?` (${profitPct.toFixed(2)}%)`:""}`:"익절가 입력 시 표시";
   $("kRR").textContent=isFinite(rr)?"1 : "+rr.toFixed(2):"—";
-  $("kRRSub").textContent=profits.length>1?`TP ${profits.length}개 분할 가중`:(isFinite(rr)?"순수익 ÷ 순손실":"—");
+  $("kRRSub").textContent=isFinite(rr)?"순수익 ÷ 순손실":"—";
 
   // 막대
   const L=netLoss,P=isFinite(netProfit)&&netProfit>0?netProfit:0;
@@ -493,6 +474,7 @@ function calc(){
   let w=[];
   const rem=Math.abs(ticks-Math.round(ticks));
   if(rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
+  if(isFinite(t1)&&((dir==="long"&&t1<=e)||(dir==="short"&&t1>=e)))w.push(`⚠️ 익절가가 방향과 반대입니다 (${dir==="long"?"롱은 익절&gt;진입":"숏은 익절&lt;진입"}).`);
   if(isFinite(maxC)){
     if(maxC<=0)w.push(`⚠️ 이 손절폭(${fmt(rp,4)}pt)으로는 리스크 $${fmt(budget)} 안에 1계약도 불가 — <b>MES·MNQ 등 마이크로, 손절 축소, 리스크% 상향</b> 중 하나를 고려하세요 (계약당 $${fmt(riskPerContract)} 위험).`);
     else if(qty>maxC)w.push(`⚠️ 현재 ${qty}계약은 리스크 $${fmt(budget)} 초과 — 적정은 <b>${maxC}계약 이하</b> (계약당 $${fmt(riskPerContract)} 위험).`);
@@ -505,7 +487,7 @@ function calc(){
   if(w.length){warn.innerHTML=w.join("<br>");warn.classList.add("show");}
 
   // 상세
-  let d=`<b>${direction==="long"?"▲ 롱":"▼ 숏"} · ${s.name} × ${qty}계약</b>`;
+  let d=`<b>${dir==="long"?"▲ 롱":"▼ 숏"} · ${s.name} × ${qty}계약</b>`;
   if(stopMode!=="price")d+=` (손절 ${stopMode==="ticks"?$("stopTicks").value+"틱":"ATR "+$("atrVal").value+"×"+$("atrMult").value})`;
   d+=`<br>손절폭 <b>${fmt(rp,4)}pt</b> (${fmt(ticks,1)}틱) · 계약당 위험 <b>$${fmt(riskPerContract)}</b>`;
   if(isFinite(budget))d+=`<br>리스크 예산 $${fmt(budget)} → 적정 계약수 <b>${isFinite(maxC)?maxC+"계약":"—"}</b> (내림 처리)`;
@@ -514,7 +496,7 @@ function calc(){
   if($("memo").value.trim())d+=`<br>📝 ${$("memo").value.trim().replace(/</g,"&lt;")}`;
   $("detail").innerHTML=d;
 
-  lastText=`[${s.code} ${direction==="long"?"롱":"숏"} x${qty}] 진입${e} 손절폭${fmt(rp,4)}pt / 손실 $${fmt(netLoss)} (${isFinite(lossPct)?lossPct.toFixed(2)+"%":"-"}) / 수익 $${isFinite(netProfit)?fmt(netProfit):"-"} / RR ${isFinite(rr)?"1:"+rr.toFixed(2):"-"} / 적정 ${isFinite(maxC)?maxC+"계약":"-"}`;
+  lastText=`[${s.code} ${dir==="long"?"롱":"숏"} x${qty}] 진입${e} 손절폭${fmt(rp,4)}pt / 손실 $${fmt(netLoss)} (${isFinite(lossPct)?lossPct.toFixed(2)+"%":"-"}) / 수익 $${isFinite(netProfit)?fmt(netProfit):"-"} / RR ${isFinite(rr)?"1:"+rr.toFixed(2):"-"} / 적정 ${isFinite(maxC)?maxC+"계약":"-"}`;
   save();
 }
 function setEmpty(msg){
@@ -528,10 +510,10 @@ $("btnCopy").onclick=async()=>{
   catch(e){prompt("복사해서 사용:",lastText);}
 };
 $("btnReset").onclick=()=>{
-  ["entry","stop","target","tp2","tp3","stopTicks"].forEach(id=>$(id).value="");
+  ["entry","stop","target","stopTicks"].forEach(id=>$(id).value="");
   $("qty").value="1";$("balance").value="10000";$("riskPct").value="1";
-  $("dailyMax").value="";$("margin").value="";$("memo").value="";$("fee").value="2.5";$("slip").value="0";
-  localStorage.removeItem("fut_calc_v2");calc();
+  $("dailyMax").value="";$("margin").value="";$("memo").value="";$("fee").value="2";$("slip").value="0";
+  localStorage.removeItem("fut_calc_v3");calc();
 };
 
 /* 검색/자동저장 */
@@ -541,17 +523,15 @@ $("specSearch").addEventListener("input",e=>renderSpecTable(e.target.value));
 function save(){
   const data={sym:sel.value,customPv:$("customPv").value,customTick:$("customTick").value,
     entry:$("entry").value,stop:$("stop").value,stopTicks:$("stopTicks").value,atrVal:$("atrVal").value,
-    atrMult:$("atrMult").value,target:$("target").value,tp2:$("tp2").value,tp2w:$("tp2w").value,
-    tp3:$("tp3").value,tp3w:$("tp3w").value,qty:$("qty").value,balance:$("balance").value,
+    atrMult:$("atrMult").value,target:$("target").value,qty:$("qty").value,balance:$("balance").value,
     riskPct:$("riskPct").value,dailyMax:$("dailyMax").value,fee:$("fee").value,slip:$("slip").value,
-    margin:$("margin").value,memo:$("memo").value,direction,stopMode,riskMode};
-  try{localStorage.setItem("fut_calc_v2",JSON.stringify(data));}catch(e){}
+    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode};
+  try{localStorage.setItem("fut_calc_v3",JSON.stringify(data));}catch(e){}
 }
 function load(){
   try{
-    const d=JSON.parse(localStorage.getItem("fut_calc_v2")||"null");if(!d)return;
-    direction=d.direction||"long";stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
-    $("btnLong").classList.toggle("on",direction==="long");$("btnShort").classList.toggle("on",direction==="short");
+    const d=JSON.parse(localStorage.getItem("fut_calc_v3")||"null");if(!d)return;
+    stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
     document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.toggle("on",x.dataset.m===stopMode));
     document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.toggle("on",x.dataset.r===riskMode));
     $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
