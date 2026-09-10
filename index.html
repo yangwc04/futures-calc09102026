@@ -92,7 +92,7 @@
   .livechg{font-size:13px;font-weight:800}
   .livechg.up{color:var(--green)} .livechg.dn{color:var(--red)} .livechg.flat{color:var(--muted)}
   #liveTag{font-weight:800}
-  #chart{width:100%;height:250px;display:block;margin-top:8px}
+  #chart{width:100%;height:250px;display:block;margin-top:8px;cursor:crosshair;touch-action:none}
   .chartbtns{display:flex;gap:8px;margin-top:10px}
   .chartbtns button{flex:1;padding:11px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;
     background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
@@ -219,8 +219,20 @@
 
 <div class="wrap" style="margin-top:16px">
 <div class="card">
-  <h2>⑥ 현재 위치 (일봉)</h2>
-  <p class="desc">무료 지연시세 · 종목 바꾸면 자동 변경 · 5분 자동갱신 · 파랑=진입 빨강=손절 초록=익절</p>
+  <h2>⑥ 현재 위치 <span id="tfTitle" style="font-size:13px;color:var(--muted);font-weight:400">(일봉)</span></h2>
+  <p class="desc">무료 지연시세 · 종목 자동변경 · 파랑=진입 빨강=손절 초록=익절</p>
+  <div class="seg" id="tfSeg" style="margin-bottom:8px">
+    <button data-tf="5m" type="button">5분</button>
+    <button data-tf="15m" type="button">15분</button>
+    <button data-tf="1h" type="button">1시간</button>
+    <button data-tf="1D" type="button" class="on">일봉</button>
+  </div>
+  <div class="seg" id="sessSeg" style="margin-bottom:4px">
+    <button data-s="all" type="button" class="on">전체시간</button>
+    <button data-s="reg" type="button">정규장만</button>
+  </div>
+  <div class="hint" id="ohlcInfo" style="min-height:18px"></div>
+  <div class="hint">휠=확대/축소 · 드래그=이동 · 클릭=십자선 · 더블클릭=리셋 (모바일: 드래그 이동 · 길게누르기 십자선 · 두손가락 확대)</div>
   <div style="display:flex;align-items:baseline;gap:8px">
     <span class="livepx" id="livePx">—</span>
     <span class="livechg flat" id="liveChg"></span>
@@ -577,7 +589,13 @@ const REFRESH_MS=5*60*1000;
 let nextAt=0;
 let live={price:NaN,prev:NaN,bars:[],time:0,state:"loading",timer:null,countTimer:null};
 function pxd(v){return v<1?6:v<100?4:2;}
-function yahooURL(sym){return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(sym)+"?interval=1d&range=3mo";}
+/* 분봉 설정 (야후 제공 범위 내: 10분봉은 미제공 → 5/15분으로) */
+const TFS={"5m":{i:"5m",r:"5d",n:120,ms:60000},"15m":{i:"15m",r:"1mo",n:120,ms:60000},"1h":{i:"60m",r:"3mo",n:140,ms:60000},"1D":{i:"1d",r:"6mo",n:60,ms:300000}};
+const TFN={"5m":"5분봉","15m":"15분봉","1h":"시간봉","1D":"일봉"};
+let tf="1D",ext=true;
+try{tf=localStorage.getItem("fut_tf")||"1D";if(!TFS[tf])tf="1D";ext=localStorage.getItem("fut_ext")!=="0";}catch(e){}
+function qkey(code){return "fut_quote_"+code+"_"+tf+"_"+(ext?"e":"r");}
+function yahooURL(sym){const c=TFS[tf];return "https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(sym)+"?interval="+c.i+"&range="+c.r+(ext?"&includePrePost=true":"");}
 function proxyChain(url){
   const enc=encodeURIComponent(url);
   const chain=[url];
@@ -596,7 +614,7 @@ function shortErr(u,e){
   const m=msg.match(/HTTP \d+/)||[msg.slice(0,18)];
   return host+":"+m[0];
 }
-async function fetchJSON(url,ms=10000){
+async function fetchJSON(url,ms=8000){
   const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms);
   try{const r=await fetch(url,{signal:ctl.signal});clearTimeout(t);
     if(!r.ok)throw new Error("HTTP "+r.status);
@@ -625,11 +643,14 @@ async function loadQuote(){
   if(!s.y){live.bars=[];live.price=NaN;live.prev=NaN;
     setLiveState("err","차트 미지원 종목 (직접 입력)");drawChart();return;}
   live.sym=s.code;
-  if(!live.bars.length||live.symCached!==s.code){
+  const qk=qkey(s.code);
+  if(live.symCached!==qk){live.bars=[];live.price=NaN;live.prev=NaN;live.symCached="";cross.on=false;}
+  if(!live.bars.length){
     try{
-      const c0=JSON.parse(localStorage.getItem("fut_quote_"+s.code)||"null");
+      const c0=JSON.parse(localStorage.getItem(qk)||"null");
       if(c0&&c0.bars&&c0.bars.length){live.price=c0.price;live.prev=c0.prev;
-        live.bars=c0.bars;live.time=c0.time;live.symCached=s.code;
+        live.bars=c0.bars;live.time=c0.time;live.symCached=qk;
+        view.end=0;view.count=TFS[tf].n;
         renderLive(s,true);drawChart();}
     }catch(e){}
   }
@@ -641,16 +662,18 @@ async function loadQuote(){
       const j=await fetchJSON(u);
       if(live.sym!==s.code)return;
       const p=parseBars(j);
-      live.price=p.price;live.prev=p.prev;live.bars=p.bars.slice(-90);
-      live.time=Date.now();live.state="live";live.symCached=s.code;
-      try{localStorage.setItem("fut_quote_"+s.code,JSON.stringify({price:p.price,prev:p.prev,bars:live.bars,time:live.time}));}catch(e){}
+      live.price=p.price;live.prev=p.prev;live.bars=p.bars.slice(-600);
+      live.time=Date.now();live.state="live";live.symCached=qk;
+      view.end=0;view.count=TFS[tf].n;cross.on=false;
+      try{localStorage.setItem(qk,JSON.stringify({price:p.price,prev:p.prev,bars:live.bars,time:live.time}));}catch(e){}
       renderLive(s,false);drawChart();scheduleRefresh();return;
     }catch(e){errs.push(shortErr(u,e));}
   }
   try{
-    const c=JSON.parse(localStorage.getItem("fut_quote_"+s.code)||"null");
+    const c=JSON.parse(localStorage.getItem(qk)||"null");
     if(c&&c.bars&&c.bars.length){live.price=c.price;live.prev=c.prev;live.bars=c.bars;live.time=c.time;
-      live.state="cache";renderLive(s,true);drawChart();scheduleRefresh();return;}
+      live.state="cache";live.symCached=qk;view.end=0;view.count=TFS[tf].n;
+      renderLive(s,true);drawChart();scheduleRefresh();return;}
   }catch(e){}
   live.state="err";
   setLiveState("err","시세 연결 실패 — 새로고침을 눌러보세요"+(errs.length?" ("+errs.slice(0,3).join(" / ")+")":""));
@@ -672,12 +695,13 @@ function renderLive(s,cached){
   setLiveState(cached?"cache":"live");
   const d=new Date(live.time);
   $("liveTime").textContent=(cached?"캐시 ":"")+d.getMonth()+1+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
-  nextAt=Date.now()+REFRESH_MS;
+  nextAt=Date.now()+TFS[tf].ms;
 }
 function scheduleRefresh(){
-  nextAt=Date.now()+REFRESH_MS;
+  const ms=TFS[tf].ms;
+  nextAt=Date.now()+ms;
   if(live.timer)clearTimeout(live.timer);
-  live.timer=setTimeout(()=>loadQuote(),REFRESH_MS);
+  live.timer=setTimeout(()=>loadQuote(),ms);
   if(!live.countTimer)live.countTimer=setInterval(()=>{
     if(!nextAt)return;
     const s=Math.max(0,Math.round((nextAt-Date.now())/1000));
@@ -686,6 +710,7 @@ function scheduleRefresh(){
 }
 $("btnRefresh").onclick=()=>loadQuote();
 $("btnUsePx").onclick=()=>{if(isFinite(live.price)){$("entry").value=+live.price.toFixed(6);calc();}};
+let lastScale=null;
 function drawChart(){
   const cv=$("chart");if(!cv)return;
   const ctx=cv.getContext("2d");
@@ -694,30 +719,38 @@ function drawChart(){
   ctx.clearRect(0,0,W,H);
   const grid="#e2e8f0",mut="#64748b";
   const padL=8,padR=64,padT=12,padB=20;
-  const bars=live.bars.slice(-60);
+  const plotW=W-padL-padR;
+  const all=live.bars;
+  if(!all.length){
+    ctx.fillStyle=mut;ctx.font="13px sans-serif";ctx.textAlign="center";
+    ctx.fillText(live.state==="loading"?"시세 불러오는 중…":"차트 데이터 없음",W/2,H/2);
+    updateOhlc();return;
+  }
+  if(!(view.end>0))view.end=all.length;
+  view.count=Math.min(Math.max(15,view.count),all.length);
+  view.end=Math.min(Math.max(view.count,view.end),all.length);
+  const start=Math.max(0,view.end-view.count);
+  const bars=all.slice(start,view.end);
   const e=parseFloat($("entry").value),st=parseFloat($("stop").value),tp=parseFloat($("target").value);
   const lines=[];
   if(isFinite(e))lines.push({v:e,c:"#2563eb",t:"진입"});
   if(isFinite(st))lines.push({v:st,c:"#dc2626",t:"손절"});
   if(isFinite(tp))lines.push({v:tp,c:"#16a34a",t:"익절"});
-  if(!bars.length){
-    ctx.fillStyle=mut;ctx.font="13px sans-serif";ctx.textAlign="center";
-    ctx.fillText(live.state==="loading"?"시세 불러오는 중…":"차트 데이터 없음",W/2,H/2);
-    return;
-  }
   let lo=Math.min(...bars.map(b=>b.l)),hi=Math.max(...bars.map(b=>b.h));
   const allV=[...lines.map(l=>l.v)];if(isFinite(live.price))allV.push(live.price);
   if(allV.length){lo=Math.min(lo,...allV);hi=Math.max(hi,...allV);}
   const span=(hi-lo)||1;lo-=span*0.08;hi+=span*0.08;
-  const X=i=>padL+(W-padL-padR)*(bars.length===1?0.5:i/(bars.length-1));
+  lastScale={lo,hi};
+  const X=i=>padL+plotW*(bars.length===1?0.5:i/(bars.length-1));
   const Y=v=>padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
+  const iToX=gi=>X(gi-start);
   const dec=pxd((hi+lo)/2);
   ctx.strokeStyle=grid;ctx.fillStyle=mut;ctx.font="10px sans-serif";ctx.lineWidth=1;
   [hi,(hi+lo)/2,lo].forEach(v=>{
     ctx.beginPath();ctx.moveTo(padL,Y(v));ctx.lineTo(W-padR+6,Y(v));ctx.stroke();
     ctx.textAlign="left";ctx.fillText(fmt(v,dec),W-padR+10,Y(v)+3);
   });
-  const cw=Math.max(2,Math.min(9,(W-padL-padR)/bars.length*0.6));
+  const cw=Math.max(2,Math.min(10,plotW/Math.max(1,bars.length)*0.6));
   bars.forEach((b,i)=>{
     const up=b.c>=b.o;
     ctx.strokeStyle=ctx.fillStyle=up?"#16a34a":"#dc2626";
@@ -725,12 +758,17 @@ function drawChart(){
     const yO=Y(b.o),yC=Y(b.c);
     ctx.fillRect(X(i)-cw/2,Math.min(yO,yC),cw,Math.max(1,Math.abs(yC-yO)));
   });
-  const ma=(n,c)=>{ctx.strokeStyle=c;ctx.lineWidth=1.2;ctx.beginPath();let started=false;
-    bars.forEach((b,i)=>{if(i<n-1)return;let ssum=0;for(let k=i-n+1;k<=i;k++)ssum+=bars[k].c;
-      const y=Y(ssum/n);if(!started){ctx.moveTo(X(i),y);started=true;}else ctx.lineTo(X(i),y);});
-    ctx.stroke();ctx.lineWidth=1;};
-  if(bars.length>=5)ma(5,"#E68900");
-  if(bars.length>=20)ma(20,"#7c3aed");
+  const drawMA=(n,c)=>{
+    ctx.strokeStyle=c;ctx.lineWidth=1.2;ctx.beginPath();let st0=false;
+    for(let gi=Math.max(n-1,start);gi<view.end;gi++){
+      let ssum=0;for(let k=gi-n+1;k<=gi;k++)ssum+=all[k].c;
+      const x=iToX(gi),y=Y(ssum/n);
+      if(!st0){ctx.moveTo(x,y);st0=true;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.lineWidth=1;
+  };
+  if(all.length>=5)drawMA(5,"#E68900");
+  if(all.length>=20)drawMA(20,"#7c3aed");
   lines.forEach(l=>{
     ctx.strokeStyle=l.c;ctx.setLineDash([5,4]);ctx.beginPath();
     ctx.moveTo(padL,Y(l.v));ctx.lineTo(W-padR+6,Y(l.v));ctx.stroke();ctx.setLineDash([]);
@@ -742,14 +780,150 @@ function drawChart(){
     ctx.moveTo(padL,Y(live.price));ctx.lineTo(W-padR+6,Y(live.price));ctx.stroke();ctx.setLineDash([]);
   }
   ctx.fillStyle=mut;ctx.font="10px sans-serif";ctx.textAlign="center";
-  const fdate=t=>{const d=new Date(t);return (d.getMonth()+1)+"/"+d.getDate();};
-  ctx.fillText(fdate(bars[0].t),padL+20,H-6);
-  ctx.fillText(fdate(bars[bars.length-1].t),W-padR-20,H-6);
+  const idxs=[0,Math.floor((bars.length-1)/3),Math.floor((bars.length-1)*2/3),bars.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+  idxs.forEach(i=>{ctx.fillText(fmtT(bars[i].t),X(i),H-6);});
+  if(cross.on&&cross.idx>=start&&cross.idx<view.end&&isFinite(cross.price)){
+    const cx=iToX(cross.idx),cy=Y(Math.min(hi,Math.max(lo,cross.price)));
+    ctx.strokeStyle="#0f172a";ctx.setLineDash([4,3]);ctx.beginPath();
+    ctx.moveTo(cx,padT);ctx.lineTo(cx,H-padB);ctx.stroke();
+    ctx.moveTo(padL,cy);ctx.lineTo(W-padR+6,cy);ctx.stroke();ctx.setLineDash([]);
+    const pl=fmt(cross.price,dec);
+    ctx.font="bold 10px sans-serif";ctx.textAlign="left";
+    const pw=ctx.measureText(pl).width+12;
+    ctx.fillStyle="#0f172a";ctx.fillRect(W-padR+10,cy-9,pw,18);
+    ctx.fillStyle="#fff";ctx.fillText(pl,W-padR+16,cy+3);
+    const dl=fmtTfull(live.bars[cross.idx].t);
+    ctx.textAlign="center";
+    const dw=ctx.measureText(dl).width+12;
+    const dx=Math.min(Math.max(cx,padL+dw/2),W-padR-dw/2);
+    ctx.fillStyle="#0f172a";ctx.fillRect(dx-dw/2,H-padB,dw,16);
+    ctx.fillStyle="#fff";ctx.fillText(dl,dx,H-padB+12);
+  }
+  updateOhlc();
+}
+function fmtT(t){
+  const d=new Date(t);
+  if(tf==="1D")return (d.getMonth()+1)+"/"+d.getDate();
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function fmtTfull(t){
+  const d=new Date(t);
+  return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function updateOhlc(){
+  const el=$("ohlcInfo");if(!el)return;
+  if(cross.on&&live.bars[cross.idx]){
+    const b=live.bars[cross.idx],up=b.c>=b.o,pc=b.o?(b.c-b.o)/b.o*100:NaN;
+    el.innerHTML=`<b>${fmtTfull(b.t)}</b> 시 ${fmt(b.o,pxd(b.o))} 고 ${fmt(b.h,pxd(b.h))} 저 ${fmt(b.l,pxd(b.l))} 종 ${fmt(b.c,pxd(b.c))} <b style="color:${up?"#16a34a":"#dc2626"}">${(up?"+":"")+fmt(pc,2)}%</b>`;
+  }else if(live.bars.length){
+    const b=live.bars[live.bars.length-1];
+    el.innerHTML=`최근봉 <b>${fmtTfull(b.t)}</b> 종 ${fmt(b.c,pxd(b.c))}`;
+  }else el.textContent="";
+}
+/* 차트 인터랙션: 휠줌·드래그팬·십자선·더블클릭리셋·핀치줌 */
+let view={end:0,count:60};
+let cross={on:false,idx:0,price:NaN};
+function clampView(){
+  const n=live.bars.length;
+  if(n<1){view.end=0;return;}
+  view.count=Math.min(Math.max(15,view.count),n);
+  view.end=Math.min(Math.max(view.count,view.end||n),n);
+}
+function zoomAt(frac,f){
+  if(live.bars.length<2)return;
+  clampView();
+  const idxC=(view.end-view.count)+frac*view.count;
+  view.count=Math.min(Math.max(15,Math.round(view.count*f)),live.bars.length);
+  view.end=Math.round(idxC+(1-frac)*view.count);
+  clampView();drawChart();
+}
+function panBy(dxPix,plotW){
+  if(live.bars.length<2)return;
+  clampView();
+  view.end=Math.round(view.end-dxPix/plotW*view.count);
+  clampView();drawChart();
+}
+function setCross(xPix,yPix){
+  const cv=$("chart");if(!cv||!lastScale||live.bars.length<1)return;
+  const W=cv.clientWidth||440;
+  clampView();
+  const n=live.bars.length;
+  const start=Math.max(0,view.end-view.count);
+  const cnt=Math.max(1,Math.min(view.count,view.end-start));
+  cross.idx=Math.min(Math.max(0,Math.round(start+(xPix-8)/(W-72)*(cnt-1))),n-1);
+  const{lo,hi}=lastScale;
+  cross.price=lo+(1-(yPix-12)/(250-32))*(hi-lo);
+  cross.on=true;
+  drawChart();
+}
+function setTF(t){
+  if(!TFS[t])return;
+  tf=t;try{localStorage.setItem("fut_tf",t);}catch(e){}
+  document.querySelectorAll("#tfSeg button").forEach(x=>x.classList.toggle("on",x.dataset.tf===t));
+  $("tfTitle").textContent="("+TFN[t]+")";
+  view.end=0;view.count=TFS[t].n;cross.on=false;
+  loadQuote();
+}
+function setExt(v){
+  ext=v;try{localStorage.setItem("fut_ext",v?"1":"0");}catch(e){}
+  document.querySelectorAll("#sessSeg button").forEach(x=>x.classList.toggle("on",(x.dataset.s==="all")===v));
+  view.end=0;cross.on=false;
+  loadQuote();
+}
+document.querySelectorAll("#tfSeg button").forEach(b=>b.onclick=()=>setTF(b.dataset.tf));
+document.querySelectorAll("#sessSeg button").forEach(b=>b.onclick=()=>setExt(b.dataset.s==="all"));
+function bindChart(){
+  const cv=$("chart");if(!cv||cv.dataset.bound)return;cv.dataset.bound="1";
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  let drag=null,lpTimer=null,pinch0=0,count0=0;
+  cv.addEventListener("wheel",e=>{e.preventDefault();
+    const r=cv.getBoundingClientRect();
+    const frac=Math.min(Math.max(0,(e.clientX-r.left-8)/((cv.clientWidth||440)-72)),1);
+    zoomAt(frac,e.deltaY>0?1.15:1/1.15);
+  },{passive:false});
+  cv.addEventListener("mousedown",e=>{drag={x:e.clientX};});
+  window.addEventListener("mousemove",e=>{
+    if(drag){const dx=e.clientX-drag.x;if(dx)panBy(dx,(cv.clientWidth||440)-72);drag={x:e.clientX};return;}
+    if(e.target===cv){const p=pos(e);setCross(p.x,p.y);}
+  });
+  window.addEventListener("mouseup",()=>{drag=null;});
+  cv.addEventListener("mouseleave",()=>{cross.on=false;try{drawChart();}catch(e){}});
+  cv.addEventListener("dblclick",()=>{view.end=0;view.count=TFS[tf].n;cross.on=false;drawChart();});
+  cv.addEventListener("touchstart",e=>{
+    if(e.touches.length===2){
+      const a=e.touches[0],b=e.touches[1];
+      pinch0=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);count0=view.count;
+      if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+    }else if(e.touches.length===1){
+      drag={x:e.touches[0].clientX,y:e.touches[0].clientY};
+      lpTimer=setTimeout(()=>{const t=e.touches[0];if(t){const r=cv.getBoundingClientRect();setCross(t.clientX-r.left,t.clientY-r.top);cross._touch=true;}},450);
+    }
+  },{passive:true});
+  cv.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    if(e.touches.length===2){
+      const a=e.touches[0],b=e.touches[1];
+      const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      if(pinch0>0&&live.bars.length){view.count=Math.min(Math.max(15,Math.round(count0*pinch0/Math.max(1,d))),live.bars.length);clampView();drawChart();}
+      return;
+    }
+    const t=e.touches[0];if(!t)return;
+    if(cross._touch){const r=cv.getBoundingClientRect();setCross(t.clientX-r.left,t.clientY-r.top);return;}
+    if(drag){const dx=t.clientX-drag.x;
+      if(Math.abs(dx)>8&&lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+      if(dx)panBy(dx,(cv.clientWidth||440)-72);drag={x:t.clientX,y:t.clientY};}
+  },{passive:false});
+  cv.addEventListener("touchend",()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}drag=null;cross._touch=false;cross.on=false;try{drawChart();}catch(e){}});
 }
 function onSymbol(){renderFavs();calc();loadQuote();}
 window.addEventListener("resize",()=>{try{drawChart();}catch(e){}});
 
 /* init */
+document.querySelectorAll("#tfSeg button").forEach(x=>x.classList.toggle("on",x.dataset.tf===tf));
+document.querySelectorAll("#sessSeg button").forEach(x=>x.classList.toggle("on",(x.dataset.s==="all")===ext));
+$("tfTitle").textContent="("+TFN[tf]+")";
+view.count=TFS[tf].n;
+bindChart();
 buildSymbols("");load();renderFavs();refreshPill();renderSpecTable("");calc();loadQuote();
 </script>
 </body>
