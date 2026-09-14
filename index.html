@@ -151,6 +151,10 @@
     <div><label class="lbl">익절 TP1 (선택)</label><input id="target" type="number" step="any" placeholder="예: 6360.25"></div>
     <div><label class="lbl" id="qtyLbl">계약 수</label><input id="qty" type="number" step="1" min="1" value="1"></div>
   </div>
+  <div class="row" id="amtRow" style="display:none;margin-top:10px">
+    <div><label class="lbl">매입금액 ($) (선택·입력 시 수량 자동)</label><input id="buyAmt" type="number" step="any" placeholder="예: 4000"></div>
+    <div><label class="lbl">→ 계산된 수량</label><input id="buyQty" readonly placeholder="—" style="background:#f1f5f9"></div>
+  </div>
   <div class="rrbtns">
     <span class="hint" style="align-self:center">RR로 익절 자동입력 →</span>
     <button type="button" data-rr="1">1:1</button>
@@ -352,6 +356,7 @@ function setMode(m){
   $("qtyLbl").textContent=sk?"수량 (주)":"계약 수";
   $("feeLbl").textContent=sk?"수수료 총액 ($)":"왕복 수수료 /계약 ($)";
   $("entryLbl").textContent=sk?"매입가":"진입가";
+  $("amtRow").style.display=sk?"flex":"none";
   if(sk){stopMode="price";$("customBox").style.display="none";}
   calc();
 }
@@ -482,10 +487,22 @@ function calc(){
   const s=refreshPill();
   const stockMode=(mode==="stock");
   const unit=stockMode?"주":"계약";
-  if(stockMode){s.pv=1;s.tick=NaN;s.code="STOCK";s.name="일반종목";}
+  if(stockMode){s.pv=1;s.tick=1;s.code="STOCK";s.name="일반종목";}
+  const dir=currentDir();
+  const badge=$("dirBadge");
+  if(badge)badge.innerHTML=!dir
+    ? "진입가와 손절가를 입력하세요 (진입&gt;손절=롱, 진입&lt;손절=숏)"
+    : dir==="long" ? "<b>▲ 롱 (매수) 자동</b> — 손절 &lt; 진입" : "<b>▼ 숏 (매도) 자동</b> — 진입 &lt; 손절";
   const warn=$("warn");warn.classList.remove("show");
   const e=parseFloat($("entry").value);
-  const qty=Math.max(1,parseInt($("qty").value||"1",10)||1);
+  let qty=Math.max(1,parseInt($("qty").value||"1",10)||1);
+  let buyShares=NaN;
+  if(stockMode){
+    const amt=parseFloat($("buyAmt").value);
+    if(isFinite(amt)&&amt>0&&isFinite(e)&&e>0)buyShares=Math.floor(amt/e);
+    if(isFinite(buyShares))qty=buyShares;
+  }
+  const bq=$("buyQty");if(bq)bq.value=isFinite(buyShares)?buyShares+" 주":"—";
   const bal=parseFloat($("balance").value);
   const feeEach=parseFloat($("fee").value||"0"), slipT=parseFloat($("slip").value||"0");
   const margin=parseFloat($("margin").value);
@@ -494,12 +511,8 @@ function calc(){
 
   if(!isFinite(s.pv)||!isFinite(s.tick)||!isFinite(e)){
     setEmpty("종목·진입가를 입력하세요.");save();return;}
-  const dir=currentDir();
-  const badge=$("dirBadge");
-  if(badge)badge.innerHTML=!dir
-    ? "진입가와 손절가를 입력하세요 (진입&gt;손절=롱, 진입&lt;손절=숏)"
-    : dir==="long" ? "<b>▲ 롱 (매수) 자동</b> — 손절 &lt; 진입" : "<b>▼ 숏 (매도) 자동</b> — 진입 &lt; 손절";
   if(!dir){setEmpty("손절가를 진입가와 다르게 입력하세요.");save();return;}
+  if(stockMode&&isFinite(buyShares)&&buyShares<1){setEmpty("매입금액이 1주 가격보다 작습니다.");save();return;}
   const rp=riskPoints(s,e,dir);
   if(!(rp>0)){showWarn("손절 설정을 확인하세요.");setEmpty("손절 설정을 확인하세요.");save();return;}
   const tv=tickVal(s);
@@ -546,7 +559,7 @@ function calc(){
   // 경고/가이드
   let w=[];
   const rem=Math.abs(ticks-Math.round(ticks));
-  if(rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
+  if(!stockMode&&rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
   if(isFinite(t1)&&((dir==="long"&&t1<=e)||(dir==="short"&&t1>=e)))w.push(`⚠️ 익절가가 방향과 반대입니다 (${dir==="long"?"롱은 익절&gt;진입":"숏은 익절&lt;진입"}).`);
   if(isFinite(maxC)){
     if(maxC<=0)w.push(`⚠️ 이 손절폭(${fmt(rp,4)}pt)으로는 리스크 $${fmt(budget)} 안에 1${unit}도 불가 — <b>${stockMode?"수량 축소, 손절 축소":"MES·MNQ 등 마이크로, 손절 축소"}, 리스크% 상향</b> 중 하나를 고려하세요 (주당·계약당 $${fmt(riskPerContract)} 위험).`);
@@ -587,7 +600,7 @@ $("btnCopy").onclick=async()=>{
   catch(e){prompt("복사해서 사용:",lastText);}
 };
 $("btnReset").onclick=()=>{
-  ["entry","stop","target","stopTicks"].forEach(id=>$(id).value="");
+  ["entry","stop","target","stopTicks","buyAmt"].forEach(id=>$(id).value="");
   $("qty").value="1";$("balance").value="10000";$("riskPct").value="1";
   $("dailyMax").value="";$("margin").value="";$("memo").value="";$("fee").value="2";$("slip").value="0";
   localStorage.removeItem("fut_calc_v3");calc();
@@ -601,7 +614,7 @@ function save(){
     entry:$("entry").value,stop:$("stop").value,stopTicks:$("stopTicks").value,atrVal:$("atrVal").value,
     atrMult:$("atrMult").value,target:$("target").value,qty:$("qty").value,balance:$("balance").value,
     riskPct:$("riskPct").value,dailyMax:$("dailyMax").value,fee:$("fee").value,slip:$("slip").value,
-    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode,mode};
+    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode,mode,buyAmt:$("buyAmt").value};
   try{localStorage.setItem("fut_calc_v3",JSON.stringify(data));}catch(e){}
 }
 function load(){
