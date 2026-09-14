@@ -109,7 +109,13 @@
 <!-- ============ LEFT : INPUT ============ -->
 <div class="card">
   <h2>① 종목 & 방향</h2>
-  <p class="desc">종목 검색 후 선택하세요. YM(다우)처럼 코드+설명이 함께 나옵니다. ★는 즐겨찾기.</p>
+  <p class="desc">선물(기본) 또는 일반종목을 선택하세요.</p>
+  <div class="seg" id="modeSeg" style="margin-bottom:4px">
+    <button data-mode="fut" class="on" type="button">선물</button>
+    <button data-mode="stock" type="button">일반종목</button>
+  </div>
+  <div id="futSym">
+  <p class="desc">종목을 선택하세요. YM(다우)처럼 코드+설명이 함께 나옵니다. ★는 즐겨찾기.</p>
   <div class="favchips" id="favChips"></div>
   <label class="lbl">종목 선택</label>
   <select id="symbol" size="1"></select>
@@ -118,6 +124,7 @@
     <button id="favBtn" type="button">☆ 즐겨찾기 추가</button>
     <span class="hint" id="favHint"></span>
   </div>
+  </div><!-- /futSym -->
   <div id="customBox" style="display:none">
     <div class="row">
       <div><label class="lbl">1pt 당 달러 ($)</label><input id="customPv" type="number" step="any" value="50"></div>
@@ -128,8 +135,8 @@
   <h2 style="margin-top:20px">② 진입 · 손절 · 익절</h2>
   <p class="desc">익절은 직접 입력 or RR 버튼.</p>
   <div class="row" style="margin-top:10px">
-    <div><label class="lbl">진입가</label><input id="entry" type="number" step="any" placeholder="예: 6350.25"></div>
-    <div id="stopPriceBox"><label class="lbl">손절가</label><input id="stop" type="number" step="any" placeholder="예: 6345.25"></div>
+    <div><label class="lbl" id="entryLbl">진입가</label><input id="entry" type="number" step="any" placeholder="예: 6350.25"></div>
+    <div id="stopPriceBox"><label class="lbl" id="stopLbl">손절가</label><input id="stop" type="number" step="any" placeholder="예: 6345.25"></div>
     <div id="stopTicksBox" style="display:none"><label class="lbl">손절 틱 수</label><input id="stopTicks" type="number" step="any" value="20"></div>
   </div>
   <div id="atrBox" style="display:none">
@@ -142,7 +149,7 @@
 
   <div class="row">
     <div><label class="lbl">익절 TP1 (선택)</label><input id="target" type="number" step="any" placeholder="예: 6360.25"></div>
-    <div><label class="lbl">계약 수</label><input id="qty" type="number" step="1" min="1" value="1"></div>
+    <div><label class="lbl" id="qtyLbl">계약 수</label><input id="qty" type="number" step="1" min="1" value="1"></div>
   </div>
   <div class="rrbtns">
     <span class="hint" style="align-self:center">RR로 익절 자동입력 →</span>
@@ -171,10 +178,10 @@
   <details class="adv">
     <summary>＋ 실전 비용 & 증거금 (수수료·슬리피지·마진)</summary>
     <div class="row" style="margin-top:8px">
-      <div><label class="lbl">왕복 수수료 /계약 ($)</label><input id="fee" type="number" step="any" value="2"></div>
-      <div><label class="lbl">슬리피지 (틱 수)</label><input id="slip" type="number" step="any" value="0"></div>
+      <div><label class="lbl" id="feeLbl">왕복 수수료 /계약 ($)</label><input id="fee" type="number" step="any" value="2"></div>
+      <div id="slipWrap"><label class="lbl">슬리피지 (틱 수)</label><input id="slip" type="number" step="any" value="0"></div>
     </div>
-    <div class="row">
+    <div class="row" id="marginWrap">
       <div><label class="lbl">계약당 증거금 $ (선택)</label><input id="margin" type="number" step="any" placeholder="예: 13000"></div>
       <div><label class="lbl">메모 (선택)</label><input id="memo" placeholder="예: 오늘 첫 타점"></div>
     </div>
@@ -206,7 +213,7 @@
   </div>
 </div>
 
-<div class="card" style="margin-top:16px">
+<div class="card" id="specCard" style="margin-top:16px">
   <h2>⑤ 전 종목 스펙표 (1pt 가치 · 틱)</h2>
   <p class="desc">2026년 CME·CBOT·NYMEX·COMEX·ICE 기준 표준 스펙. 브로커·마이크로/미니 변형은 ±차이 가능 — 실주문 전 증권사 확인.</p>
   <input id="specSearch" placeholder="스펙표 검색 (예: gold, 나스닥, 6E…)">
@@ -218,7 +225,7 @@
 </div>
 
 <div class="wrap" style="margin-top:16px">
-<div class="card">
+<div class="card" id="chartCard">
   <h2>⑥ 현재 위치 <span id="tfTitle" style="font-size:13px;color:var(--muted);font-weight:400">(일봉)</span></h2>
   <p class="desc">무료 지연시세 · 종목 자동변경 · 파랑=진입 빨강=손절 초록=익절</p>
   <div class="seg" id="tfSeg" style="margin-bottom:8px">
@@ -332,7 +339,23 @@ const SPECS=[
  {c:"CUSTOM",n:"직접 입력 (기타 종목)",e:"—",pv:null,tick:null,y:null},
 ];
 const $=id=>document.getElementById(id);
-let stopMode="price", riskMode="pct";
+let stopMode="price", riskMode="pct", mode="fut";
+function setMode(m){
+  mode=(m==="stock")?"stock":"fut";
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x.dataset.mode===mode));
+  const sk=mode==="stock";
+  $("futSym").style.display=sk?"none":"block";
+  $("chartCard").style.display=sk?"none":"block";
+  $("specCard").style.display=sk?"none":"block";
+  $("slipWrap").style.display=sk?"none":"block";
+  $("marginWrap").style.display=sk?"none":"block";
+  $("qtyLbl").textContent=sk?"수량 (주)":"계약 수";
+  $("feeLbl").textContent=sk?"수수료 총액 ($)":"왕복 수수료 /계약 ($)";
+  $("entryLbl").textContent=sk?"매입가":"진입가";
+  if(sk){stopMode="price";$("customBox").style.display="none";}
+  calc();
+}
+document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 /* 방향 자동 판정: 진입>손절=롱, 진입<손절=숏 (틱/ATR 모드에서 가격 미입력 시 롱 가정) */
 function currentDir(){
   const e=parseFloat($("entry").value), st=parseFloat($("stop").value);
@@ -457,6 +480,9 @@ $("favBtn").onclick=()=>{
 let lastText="";
 function calc(){
   const s=refreshPill();
+  const stockMode=(mode==="stock");
+  const unit=stockMode?"주":"계약";
+  if(stockMode){s.pv=1;s.tick=NaN;s.code="STOCK";s.name="일반종목";}
   const warn=$("warn");warn.classList.remove("show");
   const e=parseFloat($("entry").value);
   const qty=Math.max(1,parseInt($("qty").value||"1",10)||1);
@@ -479,7 +505,7 @@ function calc(){
   const tv=tickVal(s);
   const ticks=rp/s.tick;
   const grossLoss=rp*s.pv*qty;
-  const feeTot=feeEach*qty, slipTot=slipT*tv*qty;
+  const feeTot=stockMode?feeEach:feeEach*qty, slipTot=stockMode?0:slipT*tv*qty;
   const netLoss=grossLoss+feeTot+slipTot;
   const lossPct=isFinite(bal)&&bal>0?netLoss/bal*100:NaN;
 
@@ -497,12 +523,14 @@ function calc(){
     const r=parseFloat($("riskPct").value);
     if(isFinite(r))budget=riskMode==="pct"?bal*r/100:r;
   }
-  const riskPerContract=rp*s.pv+feeEach+slipT*tv;
+  const riskPerContract=rp*s.pv+(stockMode?(qty>0?feeEach/qty:0):feeEach+slipT*tv);
   const maxC=isFinite(budget)&&riskPerContract>0?Math.floor(budget/riskPerContract):NaN;
 
   // KPI
   $("kLoss").textContent="$"+fmt(netLoss);
-  $("kLossSub").textContent=`총 ${fmt(ticks,1)}틱 · ${fmt(rp,4)}pt × ${qty}계약 (수수료 $${fmt(feeTot)}${slipT?`+슬립 $${fmt(slipTot)}`:""})`;
+  $("kLossSub").textContent=stockMode
+    ?`${qty}주 × 주당 $${fmt(rp,4)} (수수료 $${fmt(feeTot)})`
+    :`총 ${fmt(ticks,1)}틱 · ${fmt(rp,4)}pt × ${qty}계약 (수수료 $${fmt(feeTot)}${slipT?`+슬립 $${fmt(slipTot)}`:""})`;
   $("kLossPct").textContent=isFinite(lossPct)?lossPct.toFixed(2)+"%":"—";
   $("kLossPctSub").textContent=isFinite(bal)&&bal>0?`잔고 $${fmt(bal)} 기준`:"잔고 입력 시 표시";
   $("kProfit").textContent=isFinite(netProfit)?"$"+fmt(netProfit):(isFinite(t1)?"방향 불일치":"$—");
@@ -521,27 +549,29 @@ function calc(){
   if(rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
   if(isFinite(t1)&&((dir==="long"&&t1<=e)||(dir==="short"&&t1>=e)))w.push(`⚠️ 익절가가 방향과 반대입니다 (${dir==="long"?"롱은 익절&gt;진입":"숏은 익절&lt;진입"}).`);
   if(isFinite(maxC)){
-    if(maxC<=0)w.push(`⚠️ 이 손절폭(${fmt(rp,4)}pt)으로는 리스크 $${fmt(budget)} 안에 1계약도 불가 — <b>MES·MNQ 등 마이크로, 손절 축소, 리스크% 상향</b> 중 하나를 고려하세요 (계약당 $${fmt(riskPerContract)} 위험).`);
-    else if(qty>maxC)w.push(`⚠️ 현재 ${qty}계약은 리스크 $${fmt(budget)} 초과 — 적정은 <b>${maxC}계약 이하</b> (계약당 $${fmt(riskPerContract)} 위험).`);
+    if(maxC<=0)w.push(`⚠️ 이 손절폭(${fmt(rp,4)}pt)으로는 리스크 $${fmt(budget)} 안에 1${unit}도 불가 — <b>${stockMode?"수량 축소, 손절 축소":"MES·MNQ 등 마이크로, 손절 축소"}, 리스크% 상향</b> 중 하나를 고려하세요 (주당·계약당 $${fmt(riskPerContract)} 위험).`);
+    else if(qty>maxC)w.push(`⚠️ 현재 ${qty}${unit}은 리스크 $${fmt(budget)} 초과 — 적정은 <b>${maxC}${unit} 이하</b> (주당·계약당 $${fmt(riskPerContract)} 위험).`);
   }
-  if(isFinite(dailyMax)&&dailyMax>0&&netLoss>dailyMax)w.push(`⚠️ 이번 거래 순손실 $${fmt(netLoss)}이 일일상한 $${fmt(dailyMax)} 초과 — 계약수 축소/손절 축소 필요.`);
-  if(margin>0&&isFinite(bal)&&bal>0){
+  if(isFinite(dailyMax)&&dailyMax>0&&netLoss>dailyMax)w.push(`⚠️ 이번 거래 순손실 $${fmt(netLoss)}이 일일상한 $${fmt(dailyMax)} 초과 — 수량·계약수 축소/손절 축소 필요.`);
+  if(!stockMode&&margin>0&&isFinite(bal)&&bal>0){
     const mu=margin*qty/bal*100;
     if(mu>100)w.push(`⚠️ 증거금 $${fmt(margin*qty)}이 잔고 초과 (${mu.toFixed(1)}%).`);
   }
   if(w.length){warn.innerHTML=w.join("<br>");warn.classList.add("show");}
 
   // 상세
-  let d=`<b>${dir==="long"?"▲ 롱":"▼ 숏"} · ${s.name} × ${qty}계약</b>`;
+  let d=`<b>${dir==="long"?"▲ 롱":"▼ 숏"} · ${s.name} × ${qty}${unit}</b>`;
   if(stopMode!=="price")d+=` (손절 ${stopMode==="ticks"?$("stopTicks").value+"틱":"ATR "+$("atrVal").value+"×"+$("atrMult").value})`;
   d+=`<br>손절폭 <b>${fmt(rp,4)}pt</b> (${fmt(ticks,1)}틱) · 계약당 위험 <b>$${fmt(riskPerContract)}</b>`;
-  if(isFinite(budget))d+=`<br>리스크 예산 $${fmt(budget)} → 적정 계약수 <b>${isFinite(maxC)?maxC+"계약":"—"}</b> (내림 처리)`;
+  if(isFinite(budget))d+=`<br>리스크 예산 $${fmt(budget)} → 적정 ${stockMode?"수량":"계약수"} <b>${isFinite(maxC)?maxC+unit:"—"}</b> (내림 처리)`;
+  if(stockMode){const inv=e*qty;
+    if(isFinite(inv)&&inv>0)d+=`<br>투자금 $${fmt(inv)} · 투자금 대비 손실률 <b>${fmt(netLoss/inv*100)}%</b>`;}
   if(margin>0){const notional=e*s.pv*qty;
     d+=`<br>명목가치 $${fmt(notional)}${isFinite(bal)&&bal>0?` · 증거금 ${fmt(margin*qty/bal*100,1)}% · 레버리지 ${(notional/bal).toFixed(1)}x`:""}`;}
   if($("memo").value.trim())d+=`<br>📝 ${$("memo").value.trim().replace(/</g,"&lt;")}`;
   $("detail").innerHTML=d;
 
-  lastText=`[${s.code} ${dir==="long"?"롱":"숏"} x${qty}] 진입${e} 손절폭${fmt(rp,4)}pt / 손실 $${fmt(netLoss)} (${isFinite(lossPct)?lossPct.toFixed(2)+"%":"-"}) / 수익 $${isFinite(netProfit)?fmt(netProfit):"-"} / RR ${isFinite(rr)?"1:"+rr.toFixed(2):"-"} / 적정 ${isFinite(maxC)?maxC+"계약":"-"}`;
+  lastText=`[${stockMode?"일반":s.code} ${dir==="long"?"롱":"숏"} x${qty}] 진입${e} 손절폭${fmt(rp,4)}pt / 손실 $${fmt(netLoss)} (${isFinite(lossPct)?lossPct.toFixed(2)+"%":"-"}) / 수익 $${isFinite(netProfit)?fmt(netProfit):"-"} / RR ${isFinite(rr)?"1:"+rr.toFixed(2):"-"} / 적정 ${isFinite(maxC)?maxC+unit:"-"}`;
   try{drawChart();}catch(e){}
   save();
 }
@@ -571,13 +601,14 @@ function save(){
     entry:$("entry").value,stop:$("stop").value,stopTicks:$("stopTicks").value,atrVal:$("atrVal").value,
     atrMult:$("atrMult").value,target:$("target").value,qty:$("qty").value,balance:$("balance").value,
     riskPct:$("riskPct").value,dailyMax:$("dailyMax").value,fee:$("fee").value,slip:$("slip").value,
-    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode};
+    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode,mode};
   try{localStorage.setItem("fut_calc_v3",JSON.stringify(data));}catch(e){}
 }
 function load(){
   try{
     const d=JSON.parse(localStorage.getItem("fut_calc_v3")||"null");if(!d)return;
     stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
+    if(d.mode)setMode(d.mode);
     document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.toggle("on",x.dataset.m===stopMode));
     document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.toggle("on",x.dataset.r===riskMode));
     $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
@@ -647,6 +678,7 @@ function parseBars(j){
     prev:isFinite(meta.chartPreviousClose)?meta.chartPreviousClose:bars[bars.length-2]?bars[bars.length-2].c:bars[0].o};
 }
 async function loadQuote(){
+  if(mode==="stock")return;
   const s=curSpec();
   if(!s.y){live.bars=[];live.price=NaN;live.prev=NaN;
     setLiveState("err","차트 미지원 종목 (직접 입력)");drawChart();return;}
