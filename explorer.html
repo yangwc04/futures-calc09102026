@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>종목 찾기 — 선물 계산기</title>
+<style>
+  :root{
+    --bg:#f1f2f4; --card:#ffffff; --ink:#14213d; --muted:#5b6472;
+    --line:#dfe3e8; --navy:#1b2a6b; --teal:#0e7c7b;
+    --red:#c0272d; --green:#178a4c;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;padding:0 14px 60px}
+  .wrap{max-width:1080px;margin:0 auto}
+  nav.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;display:flex;gap:8px}
+  nav.top button{flex:1;padding:12px 6px;font-size:14px;font-weight:800;font-family:inherit;
+    border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+  nav.top button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  h1{font-size:24px;color:var(--navy);margin:14px 0 2px;letter-spacing:-.5px}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:12px}
+  #q{width:100%;padding:13px 14px;font-size:15px;font-family:inherit;border:1.5px solid var(--line);border-radius:12px}
+  #q:focus{outline:none;border-color:var(--navy)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{padding:7px 12px;font-size:12.5px;font-weight:700;font-family:inherit;border-radius:999px;
+    border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .frow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .frow select{flex:1;min-width:140px;padding:10px;font-size:13px;font-family:inherit;
+    border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  .fcheck{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px;font-weight:700}
+  .fcheck label{display:flex;gap:6px;align-items:center;cursor:pointer}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  #count{font-size:13px;font-weight:800}
+  #btnReset{margin-left:auto;padding:9px 14px;font-size:13px;font-weight:800;font-family:inherit;
+    border-radius:10px;border:1.5px solid var(--line);background:#fff;cursor:pointer}
+  #nSize{padding:9px;font-size:13px;border:1.5px solid var(--line);border-radius:10px}
+  table.grid{width:100%;font-size:13px;border-collapse:collapse;margin-top:10px}
+  table.grid th,table.grid td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+  table.grid th{color:var(--muted);font-size:12px;background:#f8f9fb;position:sticky;top:57px}
+  table.grid tbody tr{cursor:pointer}
+  table.grid tbody tr:hover{background:#f2f6ff}
+  .mut{font-size:11.5px;color:var(--muted);margin-top:2px}
+  code{font-size:12px;background:#eef1f5;padding:2px 6px;border-radius:6px;word-break:break-all}
+  .tag{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
+  .tag.ok{background:#e5f6ec;color:var(--green)}
+  .tag.no{background:#f1f2f4;color:var(--muted)}
+  #pages{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px}
+  #pages button{padding:9px 16px;font-size:14px;font-weight:800;border-radius:10px;
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+  #pages button:disabled{opacity:.4;cursor:default}
+  .pgnum{font-size:13px;font-weight:800}
+  #detail h3{margin:0;font-size:19px;color:var(--navy);outline:none}
+  #detail .en{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  #detail dl{display:grid;grid-template-columns:130px 1fr;gap:6px 10px;font-size:13.5px;margin:14px 0 0}
+  #detail dt{color:var(--muted);font-weight:700}
+  #detail dd{margin:0;word-break:break-all}
+  button.mini{font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:8px;
+    border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+  #dCalc{margin-top:14px;background:#f8f9fb;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px}
+  #dCalc ul{margin:8px 0 0;padding-left:20px}
+  #dRel{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px}
+  #dClose{margin-top:14px;width:100%;padding:12px;font-size:14px;font-weight:800;border-radius:12px;
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+  #errBox{display:none;background:#fdecec;border:1px solid #f3b8bb;color:var(--red);
+    border-radius:12px;padding:14px;font-size:13.5px;line-height:1.7;margin-bottom:12px}
+  .notice{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:20px;
+    font-size:14px;color:var(--muted);line-height:1.7}
+  footer{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.7;text-align:center}
+  @media (max-width:640px){
+    table.grid thead{display:none}
+    table.grid,table.grid tbody,table.grid tr,table.grid td{display:block;width:100%}
+    table.grid tr{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:6px 10px;background:#fff}
+    table.grid td{border:none;padding:4px 0}
+    table.grid td::before{content:attr(data-l);display:block;font-size:11px;color:var(--muted);font-weight:800}
+    #detail dl{grid-template-columns:110px 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" id="topnav" aria-label="주요 화면">
+    <button data-view="calc" type="button" onclick="location.href='index.html'">계산기</button>
+    <button data-view="search" type="button" class="on">종목 찾기</button>
+    <button data-view="compare" type="button">비교</button>
+    <button data-view="about" type="button">자료 안내</button>
+  </nav>
+
+  <div id="view-search">
+    <h1>종목 찾기</h1>
+    <p class="sub">한국어·영문·코드·별칭 통합 검색. IBKR 공개 목록 2026-09-24 기준 717행.</p>
+    <div id="errBox" role="alert"></div>
+    <div class="card">
+      <input id="q" type="search" placeholder="예: 금, 나스닥, CL, 유로, 005930…" autocomplete="off">
+      <div class="chips" id="assetChips"></div>
+      <div class="frow">
+        <select id="fSub"></select>
+        <select id="fVenue"></select>
+        <select id="fCur"></select>
+        <select id="fSize"></select>
+        <select id="fQual"></select>
+      </div>
+      <div class="frow">
+        <select id="fType">
+          <option value="exchange_product">거래소 상품만 (기본)</option>
+          <option value="all">전체 유형</option>
+          <option value="otc_product">장외 상품</option>
+          <option value="routing_alias">경로 별칭</option>
+        </select>
+        <select id="fCalc">
+          <option value="any">계산스펙: 전체</option>
+          <option value="yes">계산스펙 있음</option>
+          <option value="no">계산스펙 없음</option>
+        </select>
+      </div>
+      <div class="fcheck">
+        <label><input type="checkbox" id="fFeat"> 대표 상품만</label>
+        <label><input type="checkbox" id="fFav"> ★ 즐겨찾기만</label>
+      </div>
+      <div class="chips" id="recentChips" style="display:none"></div>
+      <div class="toolbar">
+        <span id="count"></span>
+        <button id="btnReset" type="button">초기화</button>
+        <select id="nSize" aria-label="페이지 크기">
+          <option value="25">25개</option>
+          <option value="50">50개</option>
+          <option value="100">100개</option>
+        </select>
+      </div>
+      <div class="chips" id="cmpBar" style="display:none;margin-top:10px"></div>
+    </div>
+    <div class="card" id="tblWrap" tabindex="-1">
+      <table class="grid">
+        <thead><tr>
+          <th>상품명</th><th>분류</th><th>거래소</th><th>IBKR 코드</th><th>규모</th><th>상태</th><th>계산</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="pages"></div>
+    </div>
+    <div class="card" id="detail" style="display:none">
+      <h3 id="dName" tabindex="-1"></h3>
+      <p class="en" id="dEn"></p>
+      <dl id="dList"></dl>
+      <div id="dCalc"></div>
+      <div id="dRel"></div>
+      <button id="dClose" type="button">닫기 (ESC)</button>
+    </div>
+  </div>
+
+  <div id="view-compare" style="display:none">
+    <h1>비교</h1>
+    <p class="sub">최대 4개까지 나란히 비교합니다. 확인되지 않은 값은 미확인으로 표시됩니다.</p>
+    <div class="card" id="compareBody"></div>
+  </div>
+
+  <div id="view-about" style="display:none">
+    <h1>자료 안내</h1>
+    <div class="card" id="aboutBody"></div>
+    <div class="card">
+      <b>데이터 갱신 방법</b>
+      <p class="mut">1) 엑셀 원본(data-source)을 수정합니다. 코드는 문자열로 유지하고(앞자리 0 보존), legacy_specs_raw.json은 건드리지 않습니다.<br>
+      2) <code>node tools/import.cjs</code> — JSON·CSV·calcmap.js 재생성.<br>
+      3) <code>node tools/import.cjs --check</code> — 재생성 결과 일치 확인.<br>
+      4) <code>node tools/test-explorer.cjs</code>, <code>node tools/run-calctests.cjs</code> — 회귀 테스트.<br>
+      5) <code>node tools/serve.cjs</code> — 로컬 프리뷰 후 push는 별도 지시에 따라.</p>
+    </div>
+  </div>
+
+  <footer>IBKR 공개 표 수록 항목이며 전 세계 모든 활성 선물이 아닙니다.<br>교육용 정보이며 투자 조언이 아닙니다.</footer>
+</div>
+<script src="js/explorer.js"></script>
+<script src="js/explorer-ui.js"></script>
+</body>
+</html>

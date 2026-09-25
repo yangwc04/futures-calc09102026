@@ -1,0 +1,15 @@
+[
+  {
+    "profile_id": "corn_cents_reference",
+    "instrument_id": "ibkr:CBOT:ZC",
+    "input_price_unit": "US_cent_per_bushel",
+    "point_value": 50,
+    "tick_size": 0.25,
+    "settlement_currency": "USD",
+    "quote_to_calc_scale": null,
+    "scope": "outright_reference_not_live_feed_verification",
+    "source_url": "https://www.cmegroup.com/markets/agriculture/grains/corn/specs",
+    "verified_on": "2026-09-25",
+    "notes_ko": "5000부셸×0.01달러=센트 1포인트당 50달러. 0.25센트당 12.50달러. 기존 달러입력값과 별도 프로필. 최신 계약 및 시세 매핑은 별도 확인."
+  }
+]

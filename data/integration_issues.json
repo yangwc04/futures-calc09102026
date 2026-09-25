@@ -1,0 +1,58 @@
+[
+  {
+    "issue_id": "UNIT_ZC",
+    "codes": "ZC",
+    "finding_ko": "기존 pv=5000, tick=0.0025는 달러/부셸 기준. CME 표시 호가는 센트/부셸.",
+    "action_ko": "센트 입력이면 pv=50, tick=0.25. 달러 입력이면 기존값과 시세÷100. 두 방식을 섞지 않음.",
+    "source_url": "https://www.cmegroup.com/markets/agriculture/grains/corn/specs",
+    "status": "unit_relationship_verified"
+  },
+  {
+    "issue_id": "UNIT_OTHERS",
+    "codes": "ZS|ZW|ZL|LE|HE|GF|SB|KC|CT|OJ",
+    "finding_ko": "기존 값은 달러 환산 형태로 보임. 외부 시세 단위는 이번 작업에서 미검증.",
+    "action_ko": "각 거래소 호가단위와 제공자 응답 단위를 대조 후 변환값 설정.",
+    "source_url": "https://yangwc04.github.io/futures-calc09102026/",
+    "status": "review_required"
+  },
+  {
+    "issue_id": "BRENT",
+    "codes": "B|COIL|BZ",
+    "finding_ko": "기존 ICE B의 차트 심볼은 BZ=F. IBKR ICE 브렌트는 IPE:COIL.",
+    "action_ko": "상품코드·IBKR코드·시세심볼을 별도 저장. 동일 만기계약 확인 전 현재가 자동입력 비활성.",
+    "source_url": "https://www.ice.com/products/219/Brent-Crude-Futures",
+    "status": "mapping_review"
+  },
+  {
+    "issue_id": "VIX",
+    "codes": "VX|^VIX",
+    "finding_ko": "기존 VX 차트는 ^VIX 지수. VIX 지수와 VX 만기선물 가격은 구별해야 함.",
+    "action_ko": "참고지수 차트로 표시. VX 진입가 자동입력 금지.",
+    "source_url": "https://www.cboe.com/tradable-products/vix/vix-futures/",
+    "status": "identity_difference_verified"
+  },
+  {
+    "issue_id": "TF",
+    "codes": "TF",
+    "finding_ko": "기존 ICE Russell TF는 목록의 SGX:TF와 거래소·상품이 다름.",
+    "action_ko": "연결 미확정으로 보존. SGX TF 또는 CME RTY로 자동 치환 금지.",
+    "source_url": "https://yangwc04.github.io/futures-calc09102026/",
+    "status": "unmatched"
+  },
+  {
+    "issue_id": "CURRENCY",
+    "codes": "ALL",
+    "finding_ko": "기존 계산기는 USD 고정. 목록에는 USD 이외 통화도 있음.",
+    "action_ko": "통화별 손익과 계좌통화 환산을 분리. 환율 없으면 계좌위험률 계산 불가로 표시.",
+    "source_url": "https://yangwc04.github.io/futures-calc09102026/",
+    "status": "implementation_requirement"
+  },
+  {
+    "issue_id": "CONTRACT",
+    "codes": "ALL",
+    "finding_ko": "목록은 만기별 conid 목록이 아니고 시세 심볼도 주문계약 식별자가 아님.",
+    "action_ko": "검색 가능·계산 스펙 확인·시세 확인 상태를 따로 표시.",
+    "source_url": "https://yangwc04.github.io/futures-calc09102026/",
+    "status": "implementation_requirement"
+  }
+]

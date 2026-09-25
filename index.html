@@ -96,10 +96,26 @@
   .chartbtns{display:flex;gap:8px;margin-top:10px}
   .chartbtns button{flex:1;padding:11px;font-size:13px;font-weight:800;border-radius:12px;cursor:pointer;
     background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+  nav.topnav{display:flex;gap:8px;margin-bottom:12px}
+  nav.topnav a{flex:1;text-align:center;padding:11px 4px;font-size:13.5px;font-weight:800;text-decoration:none;
+    border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--muted)}
+  nav.topnav a.on{background:#0f172a;border-color:#0f172a;color:#fff}
+  .strip{display:none;margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;
+    padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.65}
+  .strip.show{display:block}
+  .strip button{margin:4px 6px 0 0;padding:8px 14px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;
+    border:1px solid #93c5fd;background:#fff;color:#1d4ed8}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+<nav class="topnav" aria-label="주요 화면">
+  <a href="index.html" class="on">계산기</a>
+  <a href="explorer.html">종목 찾기</a>
+  <a href="explorer.html#view=compare">비교</a>
+  <a href="explorer.html#view=about">자료 안내</a>
+</nav>
 
 <header class="hero">
   <h1>선물 계산기</h1>
@@ -125,6 +141,15 @@
     <span class="hint" id="favHint"></span>
   </div>
   </div><!-- /futSym -->
+  <div class="strip" id="zcBanner" style="display:none">
+    <b>기존 옥수수 가격의 입력 단위를 확인해 주세요.</b> 저장된 값의 단위를 알 수 없어 계산·자동입력을 보류합니다.<br>
+    <button id="zcWasDollars" type="button">달러/부셸이었음 (×100 변환)</button>
+    <button id="zcWasCents" type="button">이미 센트임 (유지)</button>
+  </div>
+  <div class="seg" id="zcSeg" style="display:none;margin-top:8px">
+    <button data-u="cents" class="on" type="button">센트/부셸</button>
+    <button data-u="dollars" type="button">달러/부셸</button>
+  </div>
   <div id="customBox" style="display:none">
     <div class="row">
       <div><label class="lbl">1pt 당 달러 ($)</label><input id="customPv" type="number" step="any" value="50"></div>
@@ -133,7 +158,7 @@
   </div>
 
   <h2 style="margin-top:20px">② 진입 · 손절 · 익절</h2>
-  <p class="desc">익절은 직접 입력 or RR 버튼.</p>
+  <p class="desc">익절은 직접 입력 or RR 버튼. 종목 변경 시 가격 입력은 초기화되고 잔고·수량·수수료는 유지됩니다.</p>
   <div class="row" style="margin-top:10px">
     <div><label class="lbl" id="entryLbl">진입가</label><input id="entry" type="number" step="any" placeholder="예: 6350.25"></div>
     <div id="stopPriceBox"><label class="lbl" id="stopLbl">손절가</label><input id="stop" type="number" step="any" placeholder="예: 6345.25"></div>
@@ -272,6 +297,7 @@
 <footer>손실률 = 순손실 ÷ 계좌잔고 × 100 · 순손실 = 포인트차 × pt가치 × 계약수 + 수수료 + 슬리피지 · 본 도구는 교육용이며 투자 조언이 아닙니다.</footer>
 </div>
 
+<script src="data/calcmap.js"></script>
 <script>
 /* ===== 전 종목 스펙: code, 종목명, 거래소, 1pt가치$, 틱크기, y=Yahoo심볼 ===== */
 const SPECS=[
@@ -361,6 +387,7 @@ function setMode(m){
   calc();
 }
 document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll("#zcSeg button").forEach(b=>b.onclick=()=>{zcUnitChoice=b.dataset.u;syncZcSeg();calc();});
 /* 방향 자동 판정: 진입>손절=롱, 진입<손절=숏 (틱/ATR 모드에서 가격 미입력 시 롱 가정) */
 function currentDir(){
   const e=parseFloat($("entry").value), st=parseFloat($("stop").value);
@@ -369,6 +396,27 @@ function currentDir(){
   return null;
 }
 const sel=$("symbol");
+
+/* Phase 2: 상품 연결·단위·시세 검증 테이블 (data/calcmap.js + 2026-09-25 실측 기록) */
+const CALC=(typeof window!=="undefined"&&window.CALCMAP)||{};
+const PRICE_UNIT={ES:"index_points",MES:"index_points",NQ:"index_points",MNQ:"index_points",YM:"index_points",MYM:"index_points",RTY:"index_points",M2K:"index_points",EMD:"index_points",NKD:"index_points",VX:"index_points",ZB:"bond_points",UB:"bond_points",ZN:"bond_points",TN:"bond_points",ZF:"bond_points",ZT:"bond_points","6E":"fx_rate","6J":"fx_rate","6B":"fx_rate","6C":"fx_rate","6A":"fx_rate",M6E:"fx_rate",CL:"usd_per_bbl",MCL:"usd_per_bbl",NG:"usd_per_mmbtu",QG:"usd_per_mmbtu",HO:"usd_per_gal",RB:"usd_per_gal",B:"usd_per_bbl",GC:"usd_per_oz",MGC:"usd_per_oz",SI:"usd_per_oz",SIL:"usd_per_oz",HG:"usd_per_lb",MHG:"usd_per_lb",PL:"usd_per_oz",PA:"usd_per_oz",ZC:"cent_per_bushel",ZS:"usd_per_bu",ZW:"usd_per_bu",ZM:"usd_per_ton",ZL:"usd_per_lb",LE:"usd_per_lb",HE:"usd_per_lb",GF:"usd_per_lb",DX:"index_points",SB:"usd_per_lb",CC:"usd_per_mt",KC:"usd_per_lb",CT:"usd_per_lb",OJ:"usd_per_lb",TF:"index_points",BTC:"usd",MBT:"usd",ETH:"usd",MET:"usd"};
+/* FEED_OK: feed 단위 == 계산 입력 단위 확인됨 (2026-09-25 Yahoo chart API 실측.
+   지수선물↔현물지수 4종 교차확인(동일 스케일, quote 시각차 약 1%), 마이크로↔미니 10종 0~0.04% 일치,
+   ZC 515=센트/부셸 확인. 연속선물 기준이며 특정 만기 주문가로 표시하지 않음) */
+const FEED_OK={ES:1,MES:1,NQ:1,MNQ:1,YM:1,MYM:1,RTY:1,M2K:1,EMD:1,NKD:1,ZB:1,UB:1,ZN:1,TN:1,ZF:1,ZT:1,"6E":1,"6J":1,"6B":1,"6C":1,"6A":1,M6E:1,CL:1,MCL:1,NG:1,QG:1,HO:1,RB:1,GC:1,MGC:1,SI:1,SIL:1,HG:1,MHG:1,PL:1,PA:1,ZM:1,CC:1,BTC:1,MBT:1,ETH:1,MET:1};
+let zcUnitChoice=null, zcDone=false, zcPending=false;
+function zcUnit(){return zcUnitChoice||"cents";}
+function syncZcSeg(){document.querySelectorAll("#zcSeg button").forEach(x=>x.classList.toggle("on",x.dataset.u===zcUnit()));}
+function autoFillState(){
+  const code=sel.value;
+  if(code==="ZC")return zcUnit()==="cents"?{ok:true}
+    :{ok:false,reason:"달러/부셸 모드에서는 센트 단위 시세를 자동입력할 수 없습니다. 센트 모드로 바꾸세요."};
+  if(code==="VX"||code==="DX")return{ok:false,reason:"지수·현물 참고용 시세는 선물 진입가로 자동입력하지 않습니다. 직접 입력하세요."};
+  if(code==="TF")return{ok:false,reason:"RTY 대리 시세이므로 자동입력을 지원하지 않습니다. 직접 입력하세요."};
+  if(code==="B")return{ok:false,reason:"NYMEX 브렌트 연속물과 ICE 상품의 만기가 다를 수 있어 자동입력을 지원하지 않습니다."};
+  if(FEED_OK[code])return{ok:true};
+  return{ok:false,reason:"시세 단위 미확인 상품은 자동입력을 지원하지 않습니다. 직접 입력하세요."};
+}
 
 function fmt(n,d=2){if(!isFinite(n))return"—";return n.toLocaleString(undefined,{maximumFractionDigits:d});}
 function tickVal(s){return s.pv*s.tick;}
@@ -404,15 +452,18 @@ function buildSymbols(filter=""){
   if(!sel.options.length){const o=document.createElement("option");o.textContent="검색 결과 없음";sel.appendChild(o);}
 }
 function curSpec(){
-  const s=SPECS.find(x=>x.c===sel.value)||SPECS[0];
+  const s=SPECS.find(x=>x.c===sel.value);
+  if(!s)return{pv:NaN,tick:NaN,code:"UNKNOWN",name:"미확인 종목",y:null};
   if(s.c==="CUSTOM"){
     $("customBox").style.display="block";
     return{pv:parseFloat($("customPv").value),tick:parseFloat($("customTick").value),code:"CUSTOM",name:"직접 입력"};
   }
   $("customBox").style.display="none";
+  if(s.c==="ZC"&&mode==="fut"&&zcUnit()==="cents")return{...s,pv:50,tick:0.25,code:s.c,name:`${s.c} (${s.n})`};
   return{...s,code:s.c,name:`${s.c} (${s.n})`};
 }
 function refreshPill(){
+  const zseg=$("zcSeg");if(zseg)zseg.style.display=(sel.value==="ZC"&&mode==="fut")?"flex":"none";
   const s=curSpec();
   if(!isFinite(s.pv)||!isFinite(s.tick)){$("specPill").innerHTML="포인트 가치와 틱을 입력하세요.";return s;}
   const ex=SPECS.find(x=>x.c===s.code);
@@ -512,6 +563,7 @@ function calc(){
   if(!isFinite(s.pv)||!isFinite(s.tick)||!isFinite(e)){
     setEmpty("종목·진입가를 입력하세요.");save();return;}
   if(!dir){setEmpty("손절가를 진입가와 다르게 입력하세요.");save();return;}
+  if(updateZcBanner()){setEmpty("옥수수 단위 확인 후 계산됩니다.");save();return;}
   if(stockMode&&isFinite(buyShares)&&buyShares<1){setEmpty("매입금액이 1주 가격보다 작습니다.");save();return;}
   const rp=riskPoints(s,e,dir);
   if(!(rp>0)){showWarn("손절 설정을 확인하세요.");setEmpty("손절 설정을 확인하세요.");save();return;}
@@ -559,6 +611,7 @@ function calc(){
   // 경고/가이드
   let w=[];
   const rem=Math.abs(ticks-Math.round(ticks));
+  if(sel.value==="ZC"&&mode==="fut"&&zcUnit()!=="cents")w.push("⚠️ 달러/부셸 모드: 차트(센트 단위)와 입력 단위가 다릅니다.");
   if(!stockMode&&rem>1e-6&&rem<0.999999)w.push(`⚠️ 손절폭(${fmt(rp,6)})이 틱(${s.tick})의 정수배가 아닙니다. 호가단위 확인.`);
   if(isFinite(t1)&&((dir==="long"&&t1<=e)||(dir==="short"&&t1>=e)))w.push(`⚠️ 익절가가 방향과 반대입니다 (${dir==="long"?"롱은 익절&gt;진입":"숏은 익절&lt;진입"}).`);
   if(isFinite(maxC)){
@@ -603,35 +656,135 @@ $("btnReset").onclick=()=>{
   ["entry","stop","target","stopTicks","buyAmt"].forEach(id=>$(id).value="");
   $("qty").value="1";$("balance").value="10000";$("riskPct").value="1";
   $("dailyMax").value="";$("margin").value="";$("memo").value="";$("fee").value="2";$("slip").value="0";
-  localStorage.removeItem("fut_calc_v3");calc();
+  zcPending=false;save();calc();
 };
 
 /* 검색/자동저장 */
 sel.addEventListener("change",()=>{onSymbol();});
 $("specSearch").addEventListener("input",e=>renderSpecTable(e.target.value));
+/* 저장 v4 (v3는 복구용으로 보존, 삭제하지 않음) */
+const KEY4="fut_calc_v4", KEY3="fut_calc_v3";
+function instId(code){const e=CALC[code];return (e&&e.id)?e.id:(code==="CUSTOM"?"custom":null);}
+function curPriceUnit(){
+  if(mode==="stock")return"share_price";
+  if(sel.value==="ZC")return zcUnit()==="cents"?"cent_per_bushel":"dollar_per_bushel";
+  return PRICE_UNIT[sel.value]||null;
+}
 function save(){
-  const data={sym:sel.value,customPv:$("customPv").value,customTick:$("customTick").value,
+  const data={schemaVersion:4,instrumentId:instId(sel.value),priceUnit:curPriceUnit(),
+    sym:sel.value,customPv:$("customPv").value,customTick:$("customTick").value,
     entry:$("entry").value,stop:$("stop").value,stopTicks:$("stopTicks").value,atrVal:$("atrVal").value,
     atrMult:$("atrMult").value,target:$("target").value,qty:$("qty").value,balance:$("balance").value,
     riskPct:$("riskPct").value,dailyMax:$("dailyMax").value,fee:$("fee").value,slip:$("slip").value,
-    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode,mode,buyAmt:$("buyAmt").value};
-  try{localStorage.setItem("fut_calc_v3",JSON.stringify(data));}catch(e){}
+    margin:$("margin").value,memo:$("memo").value,stopMode,riskMode,mode,buyAmt:$("buyAmt").value,converted:zcDone===true};
+  try{localStorage.setItem(KEY4,JSON.stringify(data));}catch(e){}
+}
+function applyState(d){
+  stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
+  if(d.mode)setMode(d.mode);
+  document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.toggle("on",x.dataset.m===stopMode));
+  document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.toggle("on",x.dataset.r===riskMode));
+  $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
+  $("stopTicksBox").style.display=stopMode==="ticks"?"block":"none";
+  $("atrBox").style.display=stopMode==="atr"?"block":"none";
+  $("riskLbl").textContent=riskMode==="pct"?"건당 리스크 1 (%)":"건당 리스크 ($)";
+  Object.keys(d).forEach(k=>{if($(k)&&k!=="sym")$(k).value=d[k];});
+  if(d.sym){buildSymbols("");sel.value=d.sym;}
+  if(d.sym==="ZC"&&d.priceUnit){zcUnitChoice=d.priceUnit==="dollar_per_bushel"?"dollars":"cents";zcDone=true;syncZcSeg();}
 }
 function load(){
   try{
-    const d=JSON.parse(localStorage.getItem("fut_calc_v3")||"null");if(!d)return;
-    stopMode=d.stopMode||"price";riskMode=d.riskMode||"pct";
-    if(d.mode)setMode(d.mode);
-    document.querySelectorAll("#stopSeg button").forEach(x=>x.classList.toggle("on",x.dataset.m===stopMode));
-    document.querySelectorAll("#riskSeg button").forEach(x=>x.classList.toggle("on",x.dataset.r===riskMode));
-    $("stopPriceBox").style.display=stopMode==="price"?"block":"none";
-    $("stopTicksBox").style.display=stopMode==="ticks"?"block":"none";
-    $("atrBox").style.display=stopMode==="atr"?"block":"none";
-    $("riskLbl").textContent=riskMode==="pct"?"건당 리스크 1 (%)":"건당 리스크 ($)";
-    Object.keys(d).forEach(k=>{if($(k)&&k!=="sym")$(k).value=d[k];});
-    if(d.sym){buildSymbols("");sel.value=d.sym;}
+    const v4=JSON.parse(localStorage.getItem(KEY4)||"null");
+    if(v4&&v4.schemaVersion===4){
+      applyState(v4);
+      if(sel.value==="ZC"&&!v4.priceUnit&&(v4.entry||v4.stop||v4.target)){zcPending=true;zcDone=false;}
+      migrateFavs();return;
+    }
+    const d=JSON.parse(localStorage.getItem(KEY3)||"null");if(!d)return;
+    applyState(d);
+    if(d.sym==="ZC"&&(d.entry||d.stop||d.target)){zcPending=true;zcDone=false;}
+    else if(d.sym==="ZC"){zcUnitChoice="cents";zcDone=true;syncZcSeg();}
+    migrateFavs();
+    save();
   }catch(e){}
 }
+function migrateFavs(){
+  try{
+    if(localStorage.getItem("fut_favs_v2"))return;
+    const old=JSON.parse(localStorage.getItem("fut_favs")||"[]");
+    const v2=old.map(c=>{
+      const e=CALC[c];
+      if(e&&e.id)return{id:e.id,legacy:c};
+      return{legacy:c,id:null,note:"unmatched-preserved"};
+    });
+    localStorage.setItem("fut_favs_v2",JSON.stringify(v2));
+  }catch(e){}
+}
+/* ZC 단위 확인 배너 */
+function updateZcBanner(){
+  const b=$("zcBanner");if(!b)return false;
+  const hasPx=$("entry").value!==""||$("stop").value!==""||$("target").value!=="";
+  const show=sel.value==="ZC"&&mode==="fut"&&zcPending&&!zcDone&&hasPx;
+  b.style.display=show?"block":"none";
+  return show;
+}
+function zcResolve(asDollars){
+  ["entry","stop","target","atrVal"].forEach(id=>{
+    const e=$(id);
+    if(e&&e.value!==""&&isFinite(parseFloat(e.value)))e.value=String(+(parseFloat(e.value)*(asDollars?100:1)).toFixed(6));
+  });
+  zcUnitChoice="cents";zcDone=true;zcPending=false;
+  syncZcSeg();$("zcBanner").style.display="none";
+  save();calc();
+}
+$("zcWasDollars").onclick=()=>zcResolve(true);
+$("zcWasCents").onclick=()=>zcResolve(false);
+/* 종목 찾기에서 가져오기 (#instrument= / #legacy=) */
+function handleImport(){
+  const hsh=location.hash||"";
+  let m=/instrument=([^&]+)/.exec(hsh), code=null;
+  if(m){
+    const id=decodeURIComponent(m[1]);
+    for(const k of Object.keys(CALC)){if(CALC[k]&&CALC[k].id===id){code=k;break;}}
+    if(!code){importSay("연결되지 않은 상품 ID입니다. 직접 입력으로 진행하세요.",true);return;}
+  }else{
+    m=/legacy=([^&]+)/.exec(hsh);
+    if(!m)return;
+    code=decodeURIComponent(m[1]);
+  }
+  if(code==="CUSTOM"||!CALC[code]||!SPECS.some(x=>x.c===code)){
+    if(code==="TF")importSay("TF는 연결된 상품이 없습니다. 기존 TF를 다른 상품으로 자동 치환하지 않습니다.",true);
+    else importSay("연결 정보가 없어 직접 입력 모드로 엽니다.",true);
+    return;
+  }
+  const e=CALC[code];
+  importSay("IBKR "+(e.id||"미연결")+" 연결 · 기존 스펙(미검증"+(e.src?", 출처 있음":"")+")",false,code,e);
+}
+function importSay(msg,isCustom,code,e){
+  const strip=$("importStrip");
+  strip.textContent="";strip.classList.add("show");
+  const say=t=>{const p=document.createElement("div");p.textContent=t;strip.appendChild(p);};
+  const btn=(t,fn)=>{const b=document.createElement("button");b.type="button";b.textContent=t;b.onclick=fn;strip.appendChild(b);};
+  say(msg);
+  if(isCustom){
+    btn("직접 입력으로 열기",()=>{sel.value="CUSTOM";clearPrices();calc();importClose();});
+  }else{
+    btn("스펙 적용",()=>{
+      sel.value=code;clearPrices();
+      if(code==="ZC"){zcUnitChoice="cents";zcDone=true;syncZcSeg();}
+      onSymbol();importClose();
+      showWarn("가격은 직접 입력하세요. 연속물 시세는 참고용입니다.");
+    });
+    btn("직접 입력",()=>{sel.value="CUSTOM";clearPrices();calc();importClose();});
+  }
+  btn("닫기",importClose);
+}
+function importClose(){
+  const strip=$("importStrip");strip.classList.remove("show");strip.textContent="";
+  try{history.replaceState(null,"",location.pathname+location.search);}catch(e){}
+}
+/* 종목 변경 시 가격 초기화 (잔고·수량·수수료 유지) */
+function clearPrices(){["entry","stop","target","stopTicks","atrVal"].forEach(id=>{const e=$(id);if(e)e.value="";});}
 document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",calc));
 
 /* ===== 일봉 차트 (Yahoo 무료 지연시세 + 프록시 체인 + 캐시, 5분 갱신) ===== */
@@ -755,6 +908,7 @@ function renderLive(s,cached){
   setLiveState(cached?"cache":"live");
   const d=new Date(live.time);
   $("liveTime").textContent=(cached?"캐시 ":"")+d.getMonth()+1+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  if(s.code==="B")$("liveTime").textContent+=" · NYMEX 연속물(ICE 만기와 상이 가능)";
   nextAt=Date.now()+TFS[tf].ms;
 }
 function scheduleRefresh(){
@@ -769,7 +923,11 @@ function scheduleRefresh(){
   },1000);
 }
 $("btnRefresh").onclick=()=>loadQuote();
-$("btnUsePx").onclick=()=>{if(isFinite(live.price)){$("entry").value=+live.price.toFixed(6);calc();}};
+$("btnUsePx").onclick=()=>{
+  const g=autoFillState();
+  if(!g.ok){showWarn(g.reason);return;}
+  if(isFinite(live.price)){$("entry").value=+live.price.toFixed(6);calc();}
+};
 $("btnDetail").onclick=()=>{location.href="detail.html?code="+encodeURIComponent(sel.value);};
 let lastScale=null;
 function drawChart(){
@@ -976,7 +1134,7 @@ function bindChart(){
   },{passive:false});
   cv.addEventListener("touchend",()=>{if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}drag=null;cross._touch=false;cross.on=false;try{drawChart();}catch(e){}});
 }
-function onSymbol(){renderFavs();calc();loadQuote();}
+function onSymbol(){renderFavs();clearPrices();calc();loadQuote();}
 window.addEventListener("resize",()=>{try{drawChart();}catch(e){}});
 
 /* init */
@@ -985,7 +1143,7 @@ document.querySelectorAll("#sessSeg button").forEach(x=>x.classList.toggle("on",
 $("tfTitle").textContent="("+TFN[tf]+")";
 view.count=TFS[tf].n;
 bindChart();
-buildSymbols("");load();renderFavs();refreshPill();renderSpecTable("");calc();loadQuote();
+buildSymbols("");load();renderFavs();refreshPill();renderSpecTable("");calc();handleImport();loadQuote();
 </script>
 </body>
 </html>
