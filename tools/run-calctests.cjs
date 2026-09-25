@@ -9,6 +9,7 @@ const ROOT = path.join(__dirname, "..");
 const HTML = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 const INLINE = HTML.slice(HTML.lastIndexOf("<script>") + "<script>".length, HTML.lastIndexOf("</script>"));
 const CALCMAP_SRC = fs.readFileSync(path.join(ROOT, "data", "calcmap.js"), "utf8");
+const FEEDU_SRC = fs.readFileSync(path.join(ROOT, "data", "feed-units.js"), "utf8");
 
 let pass = 0, fail = 0;
 function ok(cond, name, extra) {
@@ -79,6 +80,7 @@ function boot(opts) {
   sb.globalThis = sb;
   vm.createContext(sb);
   if (opts.calcmap !== false) vm.runInContext(CALCMAP_SRC, sb, { filename: "calcmap.js" });
+  if (opts.feedunits !== false) vm.runInContext(FEEDU_SRC, sb, { filename: "feed-units.js" });
   vm.runInContext(INLINE, sb, { filename: "index-inline.js" });
   return { sb, els, storage, alerts };
 }
@@ -242,6 +244,34 @@ function setInputs(els, o) {
   els.symbol.value = "ES";
   sb.calc();
   ok(els.kLoss.textContent === "$—", "T16 이상 타입은 빈 상태로", els.kLoss.textContent);
+}
+// T17 명시 매핑표 무결성
+{
+  const { sb } = boot();
+  const fu = sb.window.FEEDUNITS;
+  const keys = Object.keys(fu);
+  ok(keys.length === 43, "T17 매핑 43종", keys.length);
+  ok(keys.every(k => fu[k].scale === 1 && fu[k].feed === fu[k].calc && fu[k].q && fu[k].on && fu[k].why),
+    "T17 전행 scale=1·단위일치·근거");
+}
+// T18 매핑 없으면 null을 1로 간주하지 않음
+{
+  const { sb, els } = boot({ feedunits: false });
+  els.symbol.value = "ES";
+  sb.calc();
+  ok(sb.autoFillState().ok === false, "T18 표 없으면 ES도 거부");
+}
+// T19 미검증 배지
+{
+  const { sb, els } = boot();
+  els.symbol.value = "ES";
+  setInputs(els, { entry: "5000", stop: "4999" });
+  sb.calc();
+  ok(els.specPill.innerHTML.indexOf("미검증") >= 0, "T19 기존값(미검증) 표시");
+  els.symbol.value = "CUSTOM";
+  setInputs(els, { customPv: "50", customTick: "0.25", entry: "100", stop: "90" });
+  sb.calc();
+  ok(els.specPill.innerHTML.indexOf("직접 입력") >= 0, "T19 직접입력 표시");
 }
 // T15 구조 assert
 {

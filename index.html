@@ -299,6 +299,7 @@
 </div>
 
 <script src="data/calcmap.js"></script>
+<script src="data/feed-units.js"></script>
 <script>
 /* ===== 전 종목 스펙: code, 종목명, 거래소, 1pt가치$, 틱크기, y=Yahoo심볼 ===== */
 const SPECS=[
@@ -401,22 +402,29 @@ const sel=$("symbol");
 /* Phase 2: 상품 연결·단위·시세 검증 테이블 (data/calcmap.js + 2026-09-25 실측 기록) */
 const CALC=(typeof window!=="undefined"&&window.CALCMAP)||{};
 const PRICE_UNIT={ES:"index_points",MES:"index_points",NQ:"index_points",MNQ:"index_points",YM:"index_points",MYM:"index_points",RTY:"index_points",M2K:"index_points",EMD:"index_points",NKD:"index_points",VX:"index_points",ZB:"bond_points",UB:"bond_points",ZN:"bond_points",TN:"bond_points",ZF:"bond_points",ZT:"bond_points","6E":"fx_rate","6J":"fx_rate","6B":"fx_rate","6C":"fx_rate","6A":"fx_rate",M6E:"fx_rate",CL:"usd_per_bbl",MCL:"usd_per_bbl",NG:"usd_per_mmbtu",QG:"usd_per_mmbtu",HO:"usd_per_gal",RB:"usd_per_gal",B:"usd_per_bbl",GC:"usd_per_oz",MGC:"usd_per_oz",SI:"usd_per_oz",SIL:"usd_per_oz",HG:"usd_per_lb",MHG:"usd_per_lb",PL:"usd_per_oz",PA:"usd_per_oz",ZC:"cent_per_bushel",ZS:"usd_per_bu",ZW:"usd_per_bu",ZM:"usd_per_ton",ZL:"usd_per_lb",LE:"usd_per_lb",HE:"usd_per_lb",GF:"usd_per_lb",DX:"index_points",SB:"usd_per_lb",CC:"usd_per_mt",KC:"usd_per_lb",CT:"usd_per_lb",OJ:"usd_per_lb",TF:"index_points",BTC:"usd",MBT:"usd",ETH:"usd",MET:"usd"};
-/* FEED_OK: feed 단위 == 계산 입력 단위 확인됨 (2026-09-25 Yahoo chart API 실측.
-   지수선물↔현물지수 4종 교차확인(동일 스케일, quote 시각차 약 1%), 마이크로↔미니 10종 0~0.04% 일치,
-   ZC 515=센트/부셸 확인. 연속선물 기준이며 특정 만기 주문가로 표시하지 않음) */
-const FEED_OK={ES:1,MES:1,NQ:1,MNQ:1,YM:1,MYM:1,RTY:1,M2K:1,EMD:1,NKD:1,ZB:1,UB:1,ZN:1,TN:1,ZF:1,ZT:1,"6E":1,"6J":1,"6B":1,"6C":1,"6A":1,M6E:1,CL:1,MCL:1,NG:1,QG:1,HO:1,RB:1,GC:1,MGC:1,SI:1,SIL:1,HG:1,MHG:1,PL:1,PA:1,ZM:1,CC:1,BTC:1,MBT:1,ETH:1,MET:1};
+/* 시세 단위 명시 매핑 (data/feed-units.js). null을 1로 간주하지 않음.
+   게이트는 이 표에만 의존: 표에 없으면 거부. 근거는 파일 내 why + 검증일 참조. */
+const FEEDU=(typeof window!=="undefined"&&window.FEEDUNITS)||{};
 let zcUnitChoice=null, zcDone=false, zcPending=false;
 function zcUnit(){return zcUnitChoice||"cents";}
 function syncZcSeg(){document.querySelectorAll("#zcSeg button").forEach(x=>x.classList.toggle("on",x.dataset.u===zcUnit()));}
+function calcUnitFor(code){
+  if(mode==="stock")return"share_price";
+  if(code==="ZC")return zcUnit()==="cents"?"cent_per_bushel":"dollar_per_bushel";
+  return PRICE_UNIT[code]||null;
+}
 function autoFillState(){
   const code=sel.value;
-  if(code==="ZC")return zcUnit()==="cents"?{ok:true}
-    :{ok:false,reason:"달러/부셸 모드에서는 센트 단위 시세를 자동입력할 수 없습니다. 센트 모드로 바꾸세요."};
   if(code==="VX"||code==="DX")return{ok:false,reason:"지수·현물 참고용 시세는 선물 진입가로 자동입력하지 않습니다. 직접 입력하세요."};
   if(code==="TF")return{ok:false,reason:"RTY 대리 시세이므로 자동입력을 지원하지 않습니다. 직접 입력하세요."};
   if(code==="B")return{ok:false,reason:"NYMEX 브렌트 연속물과 ICE 상품의 만기가 다를 수 있어 자동입력을 지원하지 않습니다."};
-  if(FEED_OK[code])return{ok:true};
-  return{ok:false,reason:"시세 단위 미확인 상품은 자동입력을 지원하지 않습니다. 직접 입력하세요."};
+  const t=FEEDU[code];
+  if(!t)return{ok:false,reason:"시세 단위 미확인 상품은 자동입력을 지원하지 않습니다. 직접 입력하세요."};
+  if(t.scale!==1)return{ok:false,reason:"단위 변환 배율이 확인되지 않아 자동입력을 지원하지 않습니다."};
+  if(t.feed!==t.calc)return{ok:false,reason:"시세 단위와 계산 단위가 달라 자동입력을 지원하지 않습니다."};
+  const cu=calcUnitFor(code);
+  if(t.calc!==cu)return{ok:false,reason:"현재 입력 단위와 시세 단위가 다릅니다. 직접 입력하세요."};
+  return{ok:true};
 }
 
 function fmt(n,d=2){if(!isFinite(n))return"—";return n.toLocaleString(undefined,{maximumFractionDigits:d});}
@@ -468,7 +476,11 @@ function refreshPill(){
   const s=curSpec();
   if(!isFinite(s.pv)||!isFinite(s.tick)){$("specPill").innerHTML="포인트 가치와 틱을 입력하세요.";return s;}
   const ex=SPECS.find(x=>x.c===s.code);
-  $("specPill").innerHTML=`<b>${s.name}</b>${ex?` · ${ex.e}`:""} · 1pt=<b>$${fmt(s.pv)}</b> · 틱=${s.tick} · 틱가치=<b>$${fmt(tickVal(s))}</b>`;
+  let badge="";
+  if(s.code==="CUSTOM")badge=" · 직접 입력";
+  else if(s.code==="ZC"&&mode==="fut"&&zcUnit()==="cents")badge=" · 센트 기준(단위관계 확인됨)";
+  else{const ce=CALC[s.code];if(ce&&ce.spec==="legacy_unverified")badge=" · 기존값(미검증)";}
+  $("specPill").innerHTML=`<b>${s.name}</b>${ex?` · ${ex.e}`:""} · 1pt=<b>$${fmt(s.pv)}</b> · 틱=${s.tick} · 틱가치=<b>$${fmt(tickVal(s))}</b>`+badge;
   return s;
 }
 function renderSpecTable(f=""){
