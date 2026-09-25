@@ -1,0 +1,122 @@
+[
+  {
+    "name": "D1 탐색기 로드·에러없음",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D2 '금' 검색: 금 포함",
+    "ok": true,
+    "extra": "☆ 금\nGOLD\n\t금속 · 귀금속\tCOMEX\tibkr:COMEX:GC\tstandard\t공개목록 수록\t있음"
+  },
+  {
+    "name": "D3 '금' 검색: 금리(ZN) 제외",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D4 상세 열림",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D5 상세 포커스",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D6 코드 복사",
+    "ok": true,
+    "extra": "dialog=null clip=GC"
+  },
+  {
+    "name": "D7 가져오기 이동",
+    "ok": true,
+    "extra": "ttp://127.0.0.1:8931/index.html#instrument=ibkr%3ACOMEX%3AGC"
+  },
+  {
+    "name": "D8 import 스트립",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D9 스펙 적용·종목 선택",
+    "ok": true,
+    "extra": "GC"
+  },
+  {
+    "name": "D10 GC 계산 결과",
+    "ok": true,
+    "extra": "$1,002"
+  },
+  {
+    "name": "D11 즐겨찾기 저장·복원",
+    "ok": true,
+    "extra": "★"
+  },
+  {
+    "name": "D12 비교 4개 표",
+    "ok": true,
+    "extra": "cells=36"
+  },
+  {
+    "name": "D13 ESC 닫기",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D14 가로 넘침 없음",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D15 15분봉 로드",
+    "ok": true,
+    "extra": "[지연시세]"
+  },
+  {
+    "name": "D16 봉 제목 변경",
+    "ok": true,
+    "extra": "(15분봉)"
+  },
+  {
+    "name": "D17 십자선 OHLC",
+    "ok": true,
+    "extra": "7/7 21:00 시 7,545 고 7,563 저 7,468.5 종 7,"
+  },
+  {
+    "name": "D18 휠줌·드래그 무에러",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "D19 더블클릭 리셋 무에러",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "M1 모바일 로드·넘침없음",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "M2 탭 상세 열림",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "M3 모바일 넘침없음(상세)",
+    "ok": true,
+    "extra": ""
+  },
+  {
+    "name": "M4 모바일 계산",
+    "ok": true,
+    "extra": "$502"
+  },
+  {
+    "name": "M5 모바일 계산기 넘침없음",
+    "ok": true,
+    "extra": ""
+  }
+]

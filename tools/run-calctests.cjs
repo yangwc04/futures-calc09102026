@@ -229,6 +229,20 @@ function setInputs(els, o) {
   sb.calc();
   ok(sb.autoFillState().ok === true, "T14 ZC 센트모드 자동입력 허용");
 }
+// T16 손상 저장 데이터
+{
+  const { sb, els } = boot({ storage: { fut_calc_v3: "{oops broken", fut_calc_v4: "[1,2" } });
+  els.symbol.value = "ES";
+  setInputs(els, { entry: "5000", stop: "4999", qty: "1", fee: "0", slip: "0", balance: "100000" });
+  sb.calc();
+  ok(els.kLoss.textContent === "$50", "T16 깨진 JSON에도 계산됨", els.kLoss.textContent);
+}
+{
+  const { sb, els } = boot({ storage: { fut_calc_v3: JSON.stringify({ sym: "ES", entry: { x: 1 }, stop: null, qty: "abc" }) } });
+  els.symbol.value = "ES";
+  sb.calc();
+  ok(els.kLoss.textContent === "$—", "T16 이상 타입은 빈 상태로", els.kLoss.textContent);
+}
 // T15 구조 assert
 {
   ok(INLINE.indexOf("||SPECS[0]") < 0, "T15 ES-fallback 제거됨");

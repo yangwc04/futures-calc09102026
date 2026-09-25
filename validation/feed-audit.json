@@ -1,0 +1,365 @@
+{
+  "date": "2026-09-25",
+  "quotes": {
+    "ES=F": {
+      "price": 7785.5,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "E-Mini S&P 500 Dec 26"
+    },
+    "MES=F": {
+      "price": 7785.5,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "MICRO E-MINI S&P 500 INDEX FUTU"
+    },
+    "NQ=F": {
+      "price": 30881.25,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Nasdaq 100 Dec 26"
+    },
+    "MNQ=F": {
+      "price": 30881.25,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Micro E-mini Nasdaq-100 Index F"
+    },
+    "YM=F": {
+      "price": 51912,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Mini Dow Jones Indus.-$5 Dec 26"
+    },
+    "MYM=F": {
+      "price": 51913,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Micro E-mini Dow Jones Industri"
+    },
+    "RTY=F": {
+      "price": 2857.4,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "E-mini Russell 2000 Index Futur"
+    },
+    "M2K=F": {
+      "price": 2856.8,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Micro E-mini Russell 2000 Index"
+    },
+    "EMD=F": {
+      "price": 3669.2,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "E-mini S&P MidCap 400 Index Fut"
+    },
+    "NKD=F": {
+      "price": 66155,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Nikkei/USD Futures,Dec-2026"
+    },
+    "ZB=F": {
+      "price": 104.46875,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "U.S. Treasury Bond Futures,Dec-"
+    },
+    "UB=F": {
+      "price": 105.813,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Ultra U.S. Treasury Bond Future"
+    },
+    "ZN=F": {
+      "price": 104.71875,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "10-Year T-Note Futures,Dec-2026"
+    },
+    "TN=F": {
+      "price": 105.8125,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Ultra 10-Year U.S. Treasury Not"
+    },
+    "ZF=F": {
+      "price": 103.5,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "5-Year T-Note Futures,Dec-2026"
+    },
+    "ZT=F": {
+      "price": 101.65625,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "2-Year T-Note Futures,Dec-2026"
+    },
+    "6E=F": {
+      "price": 1.14385,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Euro FX Futures,Dec-2026"
+    },
+    "6J=F": {
+      "price": 0.006409,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Japanese Yen Futures,Dec-2026"
+    },
+    "6B=F": {
+      "price": 1.3259,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "British Pound Futures,Dec-2026"
+    },
+    "6C=F": {
+      "price": 0.71,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Canadian Dollar Futures,Dec-202"
+    },
+    "6A=F": {
+      "price": 0.7018,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Australian Dollar Futures,Dec-2"
+    },
+    "M6E=F": {
+      "price": 1.1439,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Micro EUR/USD Futures,Dec-2026"
+    },
+    "CL=F": {
+      "price": 93.44,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Crude Oil Nov 26"
+    },
+    "MCL=F": {
+      "price": 93.45,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Micro WTI Crude Oil Futures,Nov"
+    },
+    "NG=F": {
+      "price": 3.2,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Natural Gas Nov 26"
+    },
+    "QG=F": {
+      "price": 3.2,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "E-mini Natural Gas Futures,Nov-"
+    },
+    "HO=F": {
+      "price": 4.555,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Heating Oil Nov 26"
+    },
+    "RB=F": {
+      "price": 3.223,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "RBOB Gasoline Nov 26"
+    },
+    "GC=F": {
+      "price": 4311.1,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Gold Dec 26"
+    },
+    "MGC=F": {
+      "price": 4310.9,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Micro Gold Futures,Dec-2026"
+    },
+    "SI=F": {
+      "price": 64.32,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Silver Dec 26"
+    },
+    "SIL=F": {
+      "price": 64.31,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Micro Silver Futures,Dec-2026"
+    },
+    "HG=F": {
+      "price": 6.753,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Copper Dec 26"
+    },
+    "MHG=F": {
+      "price": 6.753,
+      "exch": "CMX",
+      "type": "FUTURE",
+      "name": "Micro Copper Futures,Dec-2026"
+    },
+    "PL=F": {
+      "price": 1776.3,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Platinum Oct 26"
+    },
+    "PA=F": {
+      "price": 1259.5,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Palladium Dec 26"
+    },
+    "ZM=F": {
+      "price": 365.9,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Soybean Meal Futures"
+    },
+    "CC=F": {
+      "price": 5481,
+      "exch": "NYB",
+      "type": "FUTURE",
+      "name": "Cocoa Dec 26"
+    },
+    "BTC=F": {
+      "price": 84325,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Bitcoin Futures,Sep-2026"
+    },
+    "MBT=F": {
+      "price": 84330,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Micro Bitcoin Futures,Sep-2026"
+    },
+    "ETH=F": {
+      "price": 2707,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Ethereum Sep 26"
+    },
+    "MET=F": {
+      "price": 2707.5,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Micro Ether Futures,Sep-2026"
+    },
+    "ZC=F": {
+      "price": 517.25,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Corn Futures,Dec-2026"
+    },
+    "ZS=F": {
+      "price": 1299.75,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Soybean Futures,Nov-2026"
+    },
+    "ZW=F": {
+      "price": 686.5,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Chicago SRW Wheat Futures,Dec-2"
+    },
+    "ZL=F": {
+      "price": 67.28,
+      "exch": "CBT",
+      "type": "FUTURE",
+      "name": "Soybean Oil Futures,Dec-2026"
+    },
+    "LE=F": {
+      "price": 220.9,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Live Cattle Futures,Dec-2026"
+    },
+    "HE=F": {
+      "price": 69.6,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Lean Hog Futures,Dec-2026"
+    },
+    "GF=F": {
+      "price": 330.375,
+      "exch": "CME",
+      "type": "FUTURE",
+      "name": "Feeder Cattle"
+    },
+    "SB=F": {
+      "price": 18.59,
+      "exch": "NYB",
+      "type": "FUTURE",
+      "name": "Sugar #11 Oct 26"
+    },
+    "KC=F": {
+      "price": 280.25,
+      "exch": "NYB",
+      "type": "FUTURE",
+      "name": "Coffee Dec 26"
+    },
+    "CT=F": {
+      "price": 82.61,
+      "exch": "NYM",
+      "type": "ALTSYMBOL",
+      "name": "Cotton Mar 26"
+    },
+    "OJ=F": {
+      "price": 151.5,
+      "exch": "NYB",
+      "type": "FUTURE",
+      "name": "Orange Juice Nov 26"
+    },
+    "BZ=F": {
+      "price": 98.85,
+      "exch": "NYM",
+      "type": "FUTURE",
+      "name": "Brent Crude Oil Last Day Financial Futures"
+    },
+    "^VIX": {
+      "price": 15.11,
+      "exch": "CXI",
+      "type": "INDEX",
+      "name": "CBOE Volatility Index"
+    },
+    "DX-Y.NYB": {
+      "price": 100.947,
+      "exch": "NYB",
+      "type": "INDEX",
+      "name": "US Dollar Index"
+    },
+    "^GSPC": {
+      "price": 7706.75,
+      "exch": "SNP",
+      "type": "INDEX",
+      "name": "S&P 500"
+    },
+    "^NDX": {
+      "price": 30535.738,
+      "exch": "NIM",
+      "type": "INDEX",
+      "name": "NASDAQ-100"
+    },
+    "^DJI": {
+      "price": 51425.03,
+      "exch": "DJI",
+      "type": "INDEX",
+      "name": "Dow Jones Industrial Average"
+    },
+    "^RUT": {
+      "price": 2837.7886,
+      "exch": "WCB",
+      "type": "INDEX",
+      "name": " Russell 2000 Index"
+    }
+  }
+}
